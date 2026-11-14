@@ -496,11 +496,13 @@ def evaluate(
             "method": ("Frontal area density over the AVA method's sixteen wind "
                        "directions, the mean across all of them."),
             "limitation": (
-                "Geometry, not flow, and not a velocity ratio. Every footprint is "
-                "an axis-aligned rectangle, so the result is symmetric about the "
-                "cardinal axes and cannot distinguish a north-easterly from a "
-                "south-westerly -- and the published prevailing wind here is from "
-                "the north-east."),
+                "Geometry, not flow, and not a velocity ratio. The symmetry is "
+                "the metric's, not the buildings': the closed form for a "
+                "rectangle -- a*|sin| + b*|cos| -- makes every footprint's "
+                "contribution 180-degree periodic, so the result is symmetric "
+                "about the cardinal axes and cannot distinguish a "
+                "north-easterly from a south-westerly -- and the published "
+                "prevailing wind here is from the north-east."),
         },
         "drainage": {
             **_axis("drainage", led_b["unstoredM3"], led_c["unstoredM3"], 1),

@@ -9,7 +9,12 @@ What it computes is **frontal area density** (FAD) per wind direction: the total
 building face presented perpendicular to the wind, over the site area. Low FAD
 means the wind can penetrate; high FAD means the site is sheltered from that
 direction. It needs nothing but the building footprints and heights, which the
-project already has for all 2,639 envelopes.
+project already has for all 396 surveyed footprints (Open3dhk 3D Tiles fused
+with Overture Maps; the count is published in
+``data/rasters/buildings_meta.json``). An earlier version of this note said
+2,639, which was the envelope count of the tile-only city model the footprints
+were derived from -- 396 merged buildings plus the tiles that did not survive
+the merge.
 
 **FAD is not a velocity ratio and the two are never interchanged.** VR is
 Vp / V-inf and comes from a wind tunnel or CFD. The relationship between the two
@@ -192,16 +197,23 @@ def ventilation_screening(
                                else round(prevailing_fad, 4)),
         "leastExposedPrevailingDirection": least,
         "limitation": (
-            "Every footprint in this project is an axis-aligned rectangle, "
-            "generated from the land-cover raster. For a box the projected width "
-            "depends only on |sin| and |cos| of the bearing, so the result is "
-            "symmetric about north-south and east-west: NE, SE, SW and NW all "
-            "score identically. This screening therefore compares SCHEMES and site "
-            "layouts, and compares axes (a north-south wind corridor against an "
-            "east-west one), but it CANNOT distinguish a north-easterly from a "
-            "south-westerly -- which matters, because the published prevailing "
-            "wind here is from the north-east. Distinguishing them needs real "
-            "building orientations, and our massing model has none."
+            "The metric, not the buildings, is what makes this symmetric. The "
+            "footprints are 396 surveyed polygons (Open3dhk fused with Overture "
+            "Maps), and each is reduced to its own east-west and north-south "
+            "extents and its own bearing; the closed form for a rectangle -- "
+            "a*|sin| + b*|cos| -- then makes every footprint's contribution "
+            "180-degree periodic, so NE, SE, SW and NW all score identically. "
+            "That is exact geometry rather than an approximation error (a "
+            "convex body presents the same face to wind from either side), so "
+            "no oriented closed form is a route to a directionally-sensitive "
+            "screen. This screening therefore compares SCHEMES and site "
+            "layouts, and compares axes (a north-south wind corridor against "
+            "an east-west one), but it CANNOT distinguish a north-easterly "
+            "from a south-westerly -- which matters, because the published "
+            "prevailing wind here is from the north-east. Distinguishing them "
+            "needs the *arrangement*, which directional_exposure reads by "
+            "marching rays over the height raster rather than by summing "
+            "footprint contributions."
         ),
         "note": (
             "Low frontal area density means the wind can penetrate the site; "
