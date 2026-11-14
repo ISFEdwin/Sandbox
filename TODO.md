@@ -22,10 +22,15 @@ The next four weeks decide whether this is a pilot or a slide deck.
       reconciles to the total, and there is a test for the reconciliation.
       *Why:* it is the product's central claim and it is currently undefined. See STATUS §7.1.
 
-- [ ] **A3 `[P0]` Rewrite the deck's business section.** Slides 13, 15, 18, 19 plus two new ones: the precedent slide
-      (BEAM Plus fees, CORENET X) and the governance slide (Code of Practice).
+- [x] **A3 `[P0]` Rewrite the deck's business section.** Superseded by a new 15-slide deck built from scratch on
+      14 Nov 2026: problem → three failures → the three legal instruments → product → variables → where we come in
+      the approval path → three axes → declaration/computation/record → three roles → licence bands → BEAM Plus and
+      CORENET X precedent → market → competitive field → the ask.
       *Done when:* the deck states one thesis on one line, three roles, and one fee architecture with no internal
-      contradictions.
+      contradictions. — **met.** The deck lives in the team's working folder, deliberately outside this public
+      repository because it carries the fee schedule.
+- [ ] **A3b `[P1]` Governance slide.** The new deck covers the precedent slide; it still needs the Code of Practice
+      and governance slide, which depends on A4.
 
 - [ ] **A4 `[P0]` Code of Practice v0.1.** Inputs required, size bands, disclosure rules, what a declaration asserts,
       and the dispute path. Ten pages, not fifty.
