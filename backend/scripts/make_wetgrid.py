@@ -1,7 +1,14 @@
 #!/usr/bin/env python
 """Wet-grid overlay (D2): CN runoff -> storage -> fill from the lowest cells up.
 
+    python scripts/make_wetgrid.py            # the baseline design storm
     python scripts/make_wetgrid.py --rainfall 450
+
+The default is the baseline design storm (``app.config.DEFAULT_RAINFALL_MM``,
+50 mm) -- the storm the API, the run service and the ledger all use, so the
+committed overlay and the ledger agree by construction. It used to default to
+450 here while the API defaulted to 50, which is how the committed artefact came
+to describe a flood the engine never simulated.
 
 Pipeline, in the order the baseline storage ledger requires:
 
@@ -444,7 +451,11 @@ def _sensitivity(args) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--rainfall", type=float, default=450.0, help="rainfall depth, mm")
+    parser.add_argument(
+        "--rainfall", type=float, default=None,
+        help="rainfall depth, mm (default: the baseline design storm, "
+             "app.config.DEFAULT_RAINFALL_MM)",
+    )
     parser.add_argument("--resolution", type=float, default=5.0, help="cell size, m")
     parser.add_argument(
         "--out", default=None, help="output PNG (default data/rasters/wetgrid_hsk.png)"
@@ -458,6 +469,15 @@ def main() -> int:
         help="skip Priority-Flood conditioning (shows how much it matters)",
     )
     args = parser.parse_args()
+
+    if args.rainfall is None:
+        # The design storm, from the one place it is defined. The script used to
+        # default to 450 while the API defaulted to 50, so regenerating the
+        # overlay with no argument produced an artefact the ledger could not
+        # reproduce -- the exact drift the artefact-drift test now fails on.
+        from app.config import DEFAULT_RAINFALL_MM
+
+        args.rainfall = DEFAULT_RAINFALL_MM
 
     if args.sensitivity:
         return _sensitivity(args)

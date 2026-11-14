@@ -119,7 +119,7 @@ def preview(scene_id: str,
             interventions: Iterable[Mapping[str, Any]] | None = None,
             values: Iterable[Mapping[str, Any] | None] | None = None,
             plan_ids: Iterable[str] | None = None,
-            rainfall_mm: float = 450.0) -> dict[str, Any]:
+            rainfall_mm: float | None = None) -> dict[str, Any]:
     """Measure the candidates against what is on the sandbox. Writes nothing.
 
     The `now` reading and the `preview` reading come from the **same**
@@ -133,8 +133,12 @@ def preview(scene_id: str,
     the card's answers would preview a *different* intervention than the one
     about to be confirmed.
     """
+    from app.config import DEFAULT_RAINFALL_MM
     from app.services import sandbox
     from app.services.sandbox_model import ledger_for_scenario, load_grids
+
+    if rainfall_mm is None:
+        rainfall_mm = DEFAULT_RAINFALL_MM
 
     grids = load_grids()
     if grids is None:

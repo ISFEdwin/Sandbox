@@ -27,7 +27,8 @@ BACKEND_DIR = Path(__file__).resolve().parent.parent
 #: `scripts/` into the contract layer (and risk an import cycle). `sandbox_model`
 #: re-exports it as `DEFAULT_RAINFALL_MM`, so there is still one number.
 #:
-#: **50 mm, unified 17 Oct 2026.** The run request, the sandbox, the suggester
+#: **50 mm, unified 17 Oct 2026, settled as the baseline design storm on
+#: 14 Nov 2026.** The run request, the sandbox, the suggester
 #: and the preview each defaulted to 450 while this and the scene's own
 #: `env_params.precipitation` said 50, so "the default rainfall" had two answers
 #: and which one you got depended on which endpoint you called.
@@ -36,8 +37,27 @@ BACKEND_DIR = Path(__file__).resolve().parent.parent
 #: from 180,566 m3 to 9,057 m3, and the static wet-grid overlay -- generated at
 #: 450 -- pictures 16.8 ha of water where the ledger at 50 computes 0.8 ha.
 #: 50 mm is a one-hour design storm and 450 mm a 24-hour one, so this is not a
-#: rounding difference. The overlay needs regenerating at 50
-#: (`scripts/make_wetgrid.py --rainfall 50`) for the map and the ledger to agree.
+#: rounding difference.
+#:
+#: **Settled, 14 Nov 2026 -- the baseline design storm decision.** 50 mm is the
+#: register's baseline. The reasons, in order of weight:
+#:
+#: 1. The API, the run service, the suggester, the preview and this constant
+#:    already agree on 50 mm. Choosing 450 mm would have meant re-unifying five
+#:    call sites and reversing a decision the codebase had already made.
+#: 2. 50 mm is the more defensible screening event for a 5 m grid. A 24-hour
+#:    450 mm storm over 43.5 ha produces 180,566 m3 of unstored volume -- a
+#:    number that swamps the district's actual storage and makes every
+#:    intervention look negligible against it.
+#: 3. The committed raster set is regenerated from this number
+#:    (`scripts/make_wetgrid.py --rainfall 50`), so the map and the ledger
+#:    agree. `tests/test_artefact_drift.py` fails if they ever drift apart
+#:    again -- that test would have caught the state this decision fixed.
+#:
+#: The design storm is a *stated input* of the register's assumption register,
+#: not an inherited default: every published figure carries the storm it was
+#: computed under, and a baseline snapshot pins it.
+#:
 #: A caller may still ask for 450 explicitly; what is unified is the API default.
 DEFAULT_RAINFALL_MM = 50.0
 

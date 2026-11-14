@@ -90,11 +90,33 @@ MIN_SITE_CELLS = 40
 # covers the genuine flat beds while keeping the pool to a handful of patches.
 RESERVOIR_SLOPE_MAX = 0.03
 
-# RESERVOIR_MIN_INFLOW_M3: the minimum summed direct inflow a *face* must
-# receive to be a real convergence rather than a flat that merely drains one
-# branch. It is applied to the whole patch (not per cell), so it ranks faces
-# without shattering them.
-RESERVOIR_MIN_INFLOW_M3 = 300.0
+# RESERVOIR_MIN_INFLOW_FRACTION: the minimum share of the district's total
+# runoff a *face* must receive to be a real convergence rather than a flat that
+# merely drains one branch. It is applied to the whole patch (not per cell), so
+# it ranks faces without shattering them.
+#
+# **A share, not an absolute volume.** The rule used to carry an absolute
+# 300 m3 threshold, which was a 450 mm number wearing no label: it was
+# calibrated against the 24-hour storm, and when the baseline design storm was
+# settled at 50 mm (see `app.config.DEFAULT_RAINFALL_MM`) every inflow in the
+# district fell by a factor of ~20 while the threshold did not, so the rule
+# refused every face on the site and the reservoir pool came back empty.
+#
+# A fraction is the storm-invariant form of the same judgement. Both the
+# numerator (a face's inflow) and the denominator (the district's total runoff)
+# scale linearly with the design storm, so the *set* of candidate faces does not
+# change when the storm does -- only the volume quoted for each face does,
+# which is the right thing for that number to do.
+#
+# Calibration: 300 m3 at the 450 mm reference storm (180,275 m3 of district
+# runoff) is 0.1665%. At the 50 mm design storm (9,042 m3) the same rule
+# admits 15.1 m3, and the four largest faces clear it.
+RESERVOIR_MIN_INFLOW_FRACTION = 0.001665
+
+#: The absolute floor, in m3, kept as a guard for a district too small for the
+#: fraction to mean anything: on a site with a few tens of cells the fraction
+#: of a tiny runoff could fall below the smallest useful basin.
+RESERVOIR_MIN_INFLOW_M3_FLOOR = 1.0
 
 # RESERVOIR_CHANNEL_QUANTILE: the *total* weighted-accumulation quantile above
 # which a cell is "the channel" — the ultimate conveyor of water to the
@@ -278,7 +300,13 @@ def vegetated() -> np.ndarray:
 
 
 def basin_depth() -> np.ndarray | None:
-    """The 450 mm level-pool depth field, or None when it has not been run."""
+    """The design storm's level-pool depth field, or None when it has not been run.
+
+    This is the committed ``wetgrid_hsk.npy``, generated at the baseline design
+    storm (``app.config.DEFAULT_RAINFALL_MM``, 50 mm). It used to be the 450 mm
+    field, which meant the depth quoted for a reservoir candidate was a depth
+    from a storm the rest of the system never simulated.
+    """
     _ov, _buildings, depth, _accum, _fill = _rasters()
     return depth
 
@@ -387,7 +415,7 @@ def _raw_slope() -> np.ndarray | None:
     return slope
 
 
-def _direct_inflow() -> np.ndarray | None:
+def _direct_inflow(rainfall_mm: float | None = None) -> np.ndarray | None:
     """The *direct* upstream inflow each cell receives, in m3.
 
     Each upstream cell sheds its SCS-CN ``unstored_m3`` into its D8 receiver;
@@ -401,7 +429,16 @@ def _direct_inflow() -> np.ndarray | None:
     count, so a paved roof contributes more than a lawn of equal area. On this
     85 %-paved grid the two nearly coincide, but the weighted field is the
     physically correct one and does not go stale when land cover changes.
+
+    ``rainfall_mm`` defaults to the baseline design storm
+    (``app.config.DEFAULT_RAINFALL_MM``) and used to be hard-coded at 450 --
+    the number the API stopped defaulting to on 17 Oct 2026. A hard-coded storm
+    here meant the reservoir candidates were ranked against a flood the rest of
+    the system never simulated, which is the same class of error as a committed
+    raster generated at the wrong storm.
     """
+    from app.config import DEFAULT_RAINFALL_MM
+
     _ov, _buildings, _depth, _accum, _fill = _rasters()
     ov = _overlay()
     from hydrology import condition
@@ -409,13 +446,33 @@ def _direct_inflow() -> np.ndarray | None:
     receiver = condition(ov.elevation)["receiver"].ravel()
     from app.services.sandbox_model import _runoff_and_unstored
 
-    _runoff_m, unstored_m = _runoff_and_unstored(ov.land_class, 450.0)
+    mm = DEFAULT_RAINFALL_MM if rainfall_mm is None else float(rainfall_mm)
+    _runoff_m, unstored_m = _runoff_and_unstored(ov.land_class, mm)
     cell_area = ov.cell_m * ov.cell_m
     unstored_m3 = (unstored_m * cell_area).ravel()
     inflow = np.zeros_like(unstored_m3)
     valid = receiver >= 0
     np.add.at(inflow, receiver[valid], unstored_m3[valid])
     return inflow.reshape(ov.rows, ov.cols)
+
+
+def _district_runoff_m3(rainfall_mm: float | None = None) -> float:
+    """The district's total unstored runoff at the design storm, in m3.
+
+    The denominator of the reservoir inflow rule: the share of the district's
+    water a candidate face receives. Computed from the same arithmetic the
+    ledger uses, so the threshold and the inflow it is compared against are
+    measured on one scale.
+    """
+    from app.config import DEFAULT_RAINFALL_MM
+
+    _ov, _buildings, _depth, _accum, _fill = _rasters()
+    ov = _overlay()
+    from app.services.sandbox_model import _runoff_and_unstored
+
+    mm = DEFAULT_RAINFALL_MM if rainfall_mm is None else float(rainfall_mm)
+    _runoff_m, unstored_m = _runoff_and_unstored(ov.land_class, mm)
+    return float(unstored_m.sum() * ov.cell_m * ov.cell_m)
 
 
 def reservoir_candidates() -> list[dict[str, Any]]:
@@ -434,8 +491,9 @@ def reservoir_candidates() -> list[dict[str, Any]]:
     1. the **faces** are the contiguous patches of raw slope under
        ``RESERVOIR_SLOPE_MAX`` (the "conveyance is weak here" areal signal);
     2. each face is kept only if its summed direct inflow clears
-       ``RESERVOIR_MIN_INFLOW_M3`` — i.e. it actually sits under a convergence,
-       not merely draining a single branch — and the faces are returned in
+       ``RESERVOIR_MIN_INFLOW_FRACTION`` of the district's total runoff at the
+       design storm — i.e. it actually sits under a convergence, not merely
+       draining a single branch — and the faces are returned in
        descending ``totalInflowM3`` so the flat bed under the most water leads.
 
     The slope is deliberately *not* divided by when ranking: it has already done
@@ -462,6 +520,15 @@ def reservoir_candidates() -> list[dict[str, Any]]:
     _ov, buildings, _depth, accum, _fill = _rasters()
     if buildings is None:
         return []
+
+    # The admission threshold: a share of the district's total runoff at the
+    # design storm. Both sides of the comparison are computed at the same
+    # storm, so the set of faces does not move when the storm does -- only the
+    # volume quoted for each face does.
+    min_inflow = max(
+        RESERVOIR_MIN_INFLOW_FRACTION * _district_runoff_m3(),
+        RESERVOIR_MIN_INFLOW_M3_FLOOR,
+    )
 
     # The areal signal: gentle-slope ground, cleared of everything that is not a
     # site (channel, outlet, building). This is the face a basin sits on.
@@ -499,7 +566,7 @@ def reservoir_candidates() -> list[dict[str, Any]]:
         cells = np.asarray(component["cells"], dtype=np.int64)
         rs, cs = cells[:, 0], cells[:, 1]
         total_inflow = float(inflow[rs, cs].sum())
-        if total_inflow < RESERVOIR_MIN_INFLOW_M3:
+        if total_inflow < min_inflow:
             continue
         contour = contour_ring(component["cells"], bounds=ov.bounds,
                                rows=ov.rows, cols=cols)

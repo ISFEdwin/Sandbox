@@ -255,14 +255,24 @@ def _params_for(site: dict[str, Any]) -> dict[str, Any]:
     return {}
 
 
-def suggest(rainfall_mm: float = 450.0,
+def suggest(rainfall_mm: float | None = None,
             max_per_axis: int = 3) -> dict[str, Any]:
     """Ranked candidates, one axis at a time, with the arithmetic shown.
 
     Deterministic: the pools are sorted by cell count (stable), each axis's
     ranking key is a number, and ties fall back to that same cell count, so no
     call ever depends on iteration order or on anything clock-shaped.
+
+    ``rainfall_mm`` is the *forcing* the reported runoff deltas are measured
+    under; it defaults to the baseline design storm. The candidate pools
+    themselves are a property of the study area at the design storm, so they do
+    not move when a caller asks for a different storm -- the same split the
+    scenario comparison makes between the scheme and the climate.
     """
+    from app.config import DEFAULT_RAINFALL_MM
+
+    if rainfall_mm is None:
+        rainfall_mm = DEFAULT_RAINFALL_MM
     grids = load_grids()
     if grids is None:  # pragma: no cover - the rasters exist in this repo
         return {

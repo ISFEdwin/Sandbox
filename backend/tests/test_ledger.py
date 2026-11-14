@@ -337,15 +337,22 @@ def main() -> int:
     # wetgrid_hsk.npy is the level-pool depth field the cascade sits BESIDE. If a
     # refactor moved it, every published deficit would move with it silently.
     #
-    # Re-pinned 17 Oct 2026 when the design storm was unified at 50 mm and the
-    # artefact regenerated at it (`make_wetgrid.py --rainfall 50`). The hash
-    # moves when the ARTEFACT is deliberately regenerated; that is the point of
-    # the pin, and it should fail whenever a code change moves the depth field
-    # without anyone saying so.
+    # **Re-pinned 14 Nov 2026, when the design storm was settled at 50 mm and the
+    # artefact was regenerated at it** (`make_wetgrid.py`, now defaulting to the
+    # design storm). The hash moves when the ARTEFACT is deliberately
+    # regenerated; that is the point of the pin, and it should fail whenever a
+    # code change moves the depth field without anyone saying so.
+    #
+    # The previous pin was `516ff65e...`, and its comment claimed it was the
+    # 50 mm artefact. It was not: it was the hash of the **committed 450 mm
+    # file** (verified against git on 14 Nov 2026). The regeneration had been
+    # run as a diagnostic and the working tree restored, so the pin described an
+    # artefact that was never committed -- and the check had been red ever
+    # since. The pin below is the hash of the committed file as it now stands.
     wet_md5 = hashlib.md5(
         (BACKEND_DIR / "data" / "rasters" / "wetgrid_hsk.npy").read_bytes()).hexdigest()
     check("the wet-grid depth artefact is byte-identical",
-          wet_md5 == "516ff65e31e409289de088b53ea97e70", wet_md5)
+          wet_md5 == "62db7a0fae2f639d2e5d1b2bc37e2669", wet_md5)
     accum_md5 = hashlib.md5(
         (BACKEND_DIR / "data" / "rasters" / "flow_accum_hsk.npy").read_bytes()).hexdigest()
     check("the flow-accumulation artefact is unchanged",

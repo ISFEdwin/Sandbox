@@ -1087,7 +1087,7 @@ def post_scenario_evaluate(scene_id: str, body: dict) -> dict:
         {
           "massingOps": [{"op": "scale_all", "multiplier": 1.4, "scope": "west"}],
           "interventions": [{"kind": "green", "ring": [[lon, lat], ...]}],
-          "rainfallMm": 450,
+          "rainfallMm": 50,
           "sunHours": [9, 14],
           "dayOfYear": 355
         }
@@ -1412,7 +1412,7 @@ def get_ventilation_corridors(scene_id: str, directions: str | None = None) -> d
 @router.get("/scenes/{scene_id}/drainage/routed")
 def get_drainage_routed(scene_id: str, rainfall_mm: float | None = None,
                         rainfallMm: float | None = None) -> dict:  # noqa: N803
-    """GET /api/scenes/{sceneId}/drainage/routed?rainfall_mm=450
+    """GET /api/scenes/{sceneId}/drainage/routed?rainfall_mm=50
 
     The fill-and-spill routing of each cell's unstored volume down the D8 receiver
     chain, with the mass-balance identity, the depression statistics and an

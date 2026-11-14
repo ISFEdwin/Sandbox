@@ -460,7 +460,13 @@ def attach_to_scene(kind: str, png_path: Path) -> str | None:
         doc = db.read_doc(doc_path)
         if not doc or not doc.get("study_area"):
             continue
-        rel = str(Path(png_path).relative_to(settings.data_dir))
+        try:
+            rel = str(Path(png_path).relative_to(settings.data_dir))
+        except ValueError:
+            # The overlay was written outside the store (the `--out` probe
+            # path), so it has no /static URL to attach. Registering a path
+            # that cannot be served would publish a broken overlay reference.
+            return None
         attach_overlay(doc["id"], kind, rel)
         return rel
     return None

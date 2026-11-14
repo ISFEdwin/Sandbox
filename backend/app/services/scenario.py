@@ -456,8 +456,9 @@ def evaluate(
 
     # Rainfall is a *forcing*, not a scheme: it changes the world both schemes are
     # measured in, so it moves the absolute level and never the delta. Comparing
-    # 550 mm against a 450 mm baseline inside the same axes would conflate "the
-    # scheme did this" with "the climate did this", so it is reported separately.
+    # 550 mm against the 50 mm design-storm baseline inside the same axes would
+    # conflate "the scheme did this" with "the climate did this", so it is
+    # reported separately.
     forcing: dict[str, Any] | None = None
     if rainfall_mm is not None:
         at_default = storage_ledger(grids, grids.land_class, DEFAULT_RAINFALL_MM)
