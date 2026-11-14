@@ -49,6 +49,7 @@
             "items": {
               "anyOf": [
                 {
+                  "additionalProperties": true,
                   "type": "object"
                 },
                 {
@@ -272,6 +273,7 @@
           "run": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -406,6 +408,7 @@
         "description": "One feature inside the GeoJSON FeatureCollection (§3.3.2).",
         "properties": {
           "geometry": {
+            "additionalProperties": true,
             "title": "Geometry",
             "type": "object"
           },
@@ -461,6 +464,7 @@
         "description": "A feature as supplied on create/update (§3.3.3).\n\n``status``/``id``/timestamps are absent by design -- the service owns them.",
         "properties": {
           "geometry": {
+            "additionalProperties": true,
             "title": "Geometry",
             "type": "object"
           },
@@ -471,6 +475,7 @@
             "type": "string"
           },
           "params": {
+            "additionalProperties": true,
             "title": "Params",
             "type": "object"
           },
@@ -484,6 +489,7 @@
             "type": "string"
           },
           "style": {
+            "additionalProperties": true,
             "title": "Style",
             "type": "object"
           }
@@ -515,6 +521,7 @@
             "type": "string"
           },
           "params": {
+            "additionalProperties": true,
             "title": "Params",
             "type": "object"
           },
@@ -542,6 +549,7 @@
             "type": "string"
           },
           "style": {
+            "additionalProperties": true,
             "title": "Style",
             "type": "object"
           }
@@ -571,6 +579,7 @@
             "$ref": "#/components/schemas/ProposalConstraints"
           },
           "geometry": {
+            "additionalProperties": true,
             "title": "Geometry",
             "type": "object"
           },
@@ -588,6 +597,7 @@
             "type": "object"
           },
           "params": {
+            "additionalProperties": true,
             "title": "Params",
             "type": "object"
           },
@@ -648,6 +658,7 @@
             "type": "string"
           },
           "style": {
+            "additionalProperties": true,
             "title": "Style",
             "type": "object"
           },
@@ -826,6 +837,7 @@
             "type": "array"
           },
           "inputs": {
+            "additionalProperties": true,
             "title": "Inputs",
             "type": "object"
           },
@@ -1036,6 +1048,7 @@
             "title": "Nlinstruction"
           },
           "params": {
+            "additionalProperties": true,
             "title": "Params",
             "type": "object"
           },
@@ -1114,6 +1127,7 @@
             "title": "Nlinstruction"
           },
           "params": {
+            "additionalProperties": true,
             "title": "Params",
             "type": "object"
           },
@@ -1205,6 +1219,7 @@
           "params": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -1529,6 +1544,7 @@
           "centre": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -1737,6 +1753,7 @@
             "type": "string"
           },
           "params": {
+            "additionalProperties": true,
             "title": "Params",
             "type": "object"
           }
@@ -1757,6 +1774,7 @@
             "type": "string"
           },
           "values": {
+            "additionalProperties": true,
             "title": "Values",
             "type": "object"
           }
@@ -1773,6 +1791,7 @@
         "properties": {
           "interventions": {
             "items": {
+              "additionalProperties": true,
               "type": "object"
             },
             "title": "Interventions",
@@ -1796,6 +1815,7 @@
             "items": {
               "anyOf": [
                 {
+                  "additionalProperties": true,
                   "type": "object"
                 },
                 {
@@ -1833,6 +1853,7 @@
         "properties": {
           "features": {
             "items": {
+              "additionalProperties": true,
               "type": "object"
             },
             "minItems": 1,
@@ -1849,6 +1870,7 @@
             "items": {
               "anyOf": [
                 {
+                  "additionalProperties": true,
                   "type": "object"
                 },
                 {
@@ -1897,6 +1919,7 @@
           "bbox": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -1906,6 +1929,7 @@
             "title": "Bbox"
           },
           "center": {
+            "additionalProperties": true,
             "title": "Center",
             "type": "object"
           },
@@ -1983,6 +2007,7 @@
           "bbox": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -2005,6 +2030,7 @@
           "buildingsMeta": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -2025,6 +2051,7 @@
             "title": "Buildingsurl"
           },
           "center": {
+            "additionalProperties": true,
             "title": "Center",
             "type": "object"
           },
@@ -2116,6 +2143,7 @@
           "bbox": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -2127,6 +2155,7 @@
           "center": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -2200,6 +2229,7 @@
           "bbox": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -2222,6 +2252,7 @@
           "buildingsMeta": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -2244,6 +2275,7 @@
           "center": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -3104,6 +3136,7 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "additionalProperties": true,
                   "title": "Response Get Building Fit Api Scenes  Scene Id  Buildings  Building Id  Fit Get",
                   "type": "object"
                 }
@@ -3158,6 +3191,7 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "additionalProperties": true,
                   "title": "Response Chat Api Scenes  Scene Id  Chat Post",
                   "type": "object"
                 }
@@ -3289,6 +3323,7 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "additionalProperties": true,
                   "title": "Response Get Design Metrics Api Scenes  Scene Id  Design Metrics Get",
                   "type": "object"
                 }
@@ -3445,6 +3480,7 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "additionalProperties": true,
                   "title": "Response Get Drainage Hourly Api Scenes  Scene Id  Drainage Hourly Get",
                   "type": "object"
                 }
@@ -3521,6 +3557,7 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "additionalProperties": true,
                   "title": "Response Get Drainage Routed Api Scenes  Scene Id  Drainage Routed Get",
                   "type": "object"
                 }
@@ -3601,6 +3638,7 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "additionalProperties": true,
                   "title": "Response Get Heat Field Api Scenes  Scene Id  Heat Field Get",
                   "type": "object"
                 }
@@ -3677,6 +3715,7 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "additionalProperties": true,
                   "title": "Response Get Ledger Api Scenes  Scene Id  Ledger Get",
                   "type": "object"
                 }
@@ -3883,6 +3922,7 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "additionalProperties": true,
                   "title": "Response List Pins Api Scenes  Scene Id  Pins Get",
                   "type": "object"
                 }
@@ -3924,6 +3964,7 @@
           "content": {
             "application/json": {
               "schema": {
+                "additionalProperties": true,
                 "title": "Payload",
                 "type": "object"
               }
@@ -3936,6 +3977,7 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "additionalProperties": true,
                   "title": "Response Pin Intervention Api Scenes  Scene Id  Pins Post",
                   "type": "object"
                 }
@@ -3989,6 +4031,7 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "additionalProperties": true,
                   "title": "Response Repin Intervention Api Scenes  Scene Id  Pins  Feature Id  Pin Post",
                   "type": "object"
                 }
@@ -4042,6 +4085,7 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "additionalProperties": true,
                   "title": "Response Unpin Intervention Api Scenes  Scene Id  Pins  Feature Id  Unpin Post",
                   "type": "object"
                 }
@@ -4188,6 +4232,7 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "additionalProperties": true,
                   "title": "Response Post Run Api Scenes  Scene Id  Run Post",
                   "type": "object"
                 }
@@ -4242,6 +4287,7 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "additionalProperties": true,
                   "title": "Response Sandbox Inputs Api Scenes  Scene Id  Sandbox Inputs Post",
                   "type": "object"
                 }
@@ -4293,6 +4339,7 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "additionalProperties": true,
                   "title": "Response Sandbox Modify Api Scenes  Scene Id  Sandbox Modify Post",
                   "type": "object"
                 }
@@ -4344,6 +4391,7 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "additionalProperties": true,
                   "title": "Response Sandbox Preview Api Scenes  Scene Id  Sandbox Preview Post",
                   "type": "object"
                 }
@@ -4395,6 +4443,7 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "additionalProperties": true,
                   "title": "Response Sandbox Resolve Modification Api Scenes  Scene Id  Sandbox Resolve Modification Post",
                   "type": "object"
                 }
@@ -4446,6 +4495,7 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "additionalProperties": true,
                   "title": "Response Sandbox Resolve Removal Api Scenes  Scene Id  Sandbox Resolve Removal Post",
                   "type": "object"
                 }
@@ -4497,6 +4547,7 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "additionalProperties": true,
                   "title": "Response Sandbox Stage Api Scenes  Scene Id  Sandbox Stage Post",
                   "type": "object"
                 }
@@ -4548,6 +4599,7 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "additionalProperties": true,
                   "title": "Response Sandbox Suggestions Api Scenes  Scene Id  Sandbox Suggestions Post",
                   "type": "object"
                 }
@@ -4588,6 +4640,7 @@
           "content": {
             "application/json": {
               "schema": {
+                "additionalProperties": true,
                 "title": "Body",
                 "type": "object"
               }
@@ -4600,6 +4653,7 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "additionalProperties": true,
                   "title": "Response Post Scenario Compare Api Scenes  Scene Id  Scenario Compare Post",
                   "type": "object"
                 }
@@ -4643,6 +4697,7 @@
           "content": {
             "application/json": {
               "schema": {
+                "additionalProperties": true,
                 "title": "Body",
                 "type": "object"
               }
@@ -4655,6 +4710,7 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "additionalProperties": true,
                   "title": "Response Post Scenario Evaluate Api Scenes  Scene Id  Scenario Evaluate Post",
                   "type": "object"
                 }
@@ -4715,6 +4771,7 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "additionalProperties": true,
                   "title": "Response Get Published Scenarios Api Scenes  Scene Id  Scenarios Get",
                   "type": "object"
                 }
@@ -4775,6 +4832,7 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "additionalProperties": true,
                   "title": "Response Get Sea Level Scenarios Api Scenes  Scene Id  Sea Level Get",
                   "type": "object"
                 }
@@ -4839,6 +4897,7 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "additionalProperties": true,
                   "title": "Response Get Suggestions Api Scenes  Scene Id  Suggestions Get",
                   "type": "object"
                 }
@@ -4925,6 +4984,7 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "additionalProperties": true,
                   "title": "Response Get Ventilation Api Scenes  Scene Id  Ventilation Get",
                   "type": "object"
                 }
@@ -4985,6 +5045,7 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "additionalProperties": true,
                   "title": "Response Get Ventilation Corridors Api Scenes  Scene Id  Ventilation Corridors Get",
                   "type": "object"
                 }
@@ -5018,6 +5079,7 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "additionalProperties": true,
                   "title": "Response Health Health Get",
                   "type": "object"
                 }
