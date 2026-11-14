@@ -1118,7 +1118,7 @@ export default function ChatPanel() {
     {
       id: mkId(),
       role: 'ai',
-      text: 'Sandbox loaded. Adjust the rainfall and temperature sliders (top-right), toggle a project, then press Run. After the run I will suggest three interventions grounded in it, and you can describe your own here.',
+      text: 'Sandbox loaded. Adjust the rainfall and temperature sliders (top-right), toggle a project, then press Run. After the run I will suggest one intervention per axis grounded in it, and you can describe your own here.',
     },
   ])
   const [input, setInput] = useState('')
@@ -1163,7 +1163,7 @@ export default function ChatPanel() {
     // chat produces. The paragraph is the fallback for a client that predates
     // this, or for a response missing the field.
     const runCard = runResult.explanationCard as AnswerCard | undefined
-    // Route 1: the three suggestions under the card are grounded sites for
+    // Route 1: the suggestions under the card are grounded sites for
     // THIS run, fetched once it returns (ranking takes seconds the run should
     // not wait on). Fixed sentences used to sit here, the same on every run.
     const messageId = mkId()
@@ -1625,7 +1625,7 @@ export default function ChatPanel() {
               )}
               {m.suggestions === 'loading' && (
                 <Typography className="hud-shimmer" variant="caption" sx={{ display: 'block', mt: 1 }}>
-                  Finding three sites for this run…
+                  Finding a site for each axis…
                 </Typography>
               )}
               {Array.isArray(m.suggestions) && (

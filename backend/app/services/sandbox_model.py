@@ -1188,6 +1188,43 @@ INTERVENTION_EFFECTS: dict[str, dict[str, Any]] = {
                                "and wind exposure, not land cover"},
 }
 
+
+def effect_is_scored(kind: str) -> bool:
+    """Does the engine compute a land-cover effect for this intervention kind?
+
+    One predicate for "this feature moves the grid", read by the engine itself
+    (:func:`apply_interventions`) and by the claim set
+    (``proposal_constraints._owner_map``), because the two have to agree about
+    what is *work*:
+
+    - a kind with a land class (``to``) or a curve number (``cn``) is scored;
+    - a ``geometry_only`` kind is scored through the massing rasters, so it is
+      work even though it changes no cell in the land-class grid;
+    - anything else -- ``road``, ``drainage``, ``drainage_alignment``,
+      ``massing_height`` -- is **skipped**: the model declines to claim an
+      effect for it.
+
+    **Why the claim set cares.** A row the engine skips contributes nothing to
+    any number, so it is not *prior work*: it cannot be "ground already taken",
+    because nothing is computed on it. Measured on the committed staged
+    scenario: three AI-drafted ``road`` rows -- which the engine skips with "a
+    new road is a permeability and roughness question this screening model does
+    not parameterise" -- claimed 6,482 of the scenario's 6,664 cells, 37 % of
+    the district, and the proposer then had no free ground left to offer any
+    kind of site. A feature the model refuses to score must not be able to
+    silence the whole district.
+
+    An unknown kind scores nothing, so it claims nothing either -- the same
+    answer ``apply_interventions`` gives it ("no land-cover effect is defined
+    for this intervention type").
+    """
+    effect = INTERVENTION_EFFECTS.get(str(kind))
+    if effect is None:
+        return False
+    if effect.get("to") is not None or "cn" in effect:
+        return True
+    return bool(effect.get("geometry_only"))
+
 # The largest share of the study area one intervention may rework. Beyond this it
 # is describing a land-use change rather than a feature someone would build, and
 # applying it would let a single polygon erase the district's hydrology.
@@ -1503,7 +1540,7 @@ def apply_interventions(
             # happened, which is the failure this list exists to prevent. The
             # other no-grid effects (`massing_height`, `drainage_alignment`) stay
             # in `skipped`: nothing consumed them, so "skipped" is the truth.
-            if effect.get("geometry_only"):
+            if effect_is_scored(kind):
                 applied.append({
                     "id": fid, "kind": kind, "cellsChanged": 0, "areaM2": 0.0,
                     "why": effect["why"],

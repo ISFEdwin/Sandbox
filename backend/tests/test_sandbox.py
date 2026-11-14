@@ -58,7 +58,23 @@ def main() -> int:
     print("route 1: the suggestions under a run's card")
     suggestions = _suggest()
     axes = [s["axis"] for s in suggestions]
-    check("at most three, one per axis", len(suggestions) <= 3 and len(set(axes)) == len(axes), str(axes))
+    # One site per axis, and never the same site twice.
+    #
+    # The count used to be pinned at three, and the cap was never updated when
+    # the flood axis landed (commit 08a911c) -- it was only ever three because
+    # the reservoir pool was empty at the design storm, so the flood axis had
+    # nothing to offer. With the siting rule recalibrated against the settled
+    # storm the pool has candidates again and the card offers one site on each
+    # of the four axes. The invariant that matters is the shape, not the count:
+    # one per axis, no axis twice, and no footprint offered twice (the axes
+    # draw on overlapping pools, so the same site can be the best candidate on
+    # two of them).
+    geoms = [json.dumps(s["feature"]["geometry"], sort_keys=True)
+             for s in suggestions]
+    check("one site per axis, no axis twice and no site twice",
+          len(set(axes)) == len(axes) and len(set(geoms)) == len(geoms)
+          and len(suggestions) <= len(_axis_order()),
+          f"{axes} / {len(set(geoms))} distinct footprints")
     check("every one is a real footprint with an estimate",
           all(s["feature"]["geometry"]["type"] == "Polygon" and "estimate" in s for s in suggestions))
     check("the run card no longer carries fixed sentences",
@@ -387,6 +403,13 @@ def _empty_reservoir_region() -> str | None:
         if region != "all" and region not in occupied:
             return region
     return None
+
+
+def _axis_order() -> tuple[str, ...]:
+    """The axes the suggester ranks on, from the module that owns them."""
+    from app.services.suggest import AXIS_ORDER
+
+    return AXIS_ORDER
 
 
 def _inputs_for(kind: str) -> list[dict]:

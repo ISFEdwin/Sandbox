@@ -53,6 +53,7 @@ from app.services.sandbox_model import (  # noqa: E402
     MAX_INTERVENTION_COVERAGE,
     MAX_TOTAL_COVERAGE,
     _polygon_cells,
+    effect_is_scored,
 )
 from app.services.siting import (  # noqa: E402
     MIN_SITE_CELLS,
@@ -244,6 +245,25 @@ def _owner_map(
     rasteriser, holes subtracted -- so "claimed" means exactly "the cells the
     run would rework". ``plan_ids`` empty/None means "no staged plan" (D.2): the
     staged-plan default is the caller's job, not this function's.
+
+    **Prior work is work the engine scores.** A row whose kind the engine
+    *skips* -- ``road``, ``drainage``, ``drainage_alignment``,
+    ``massing_height``: kinds the model declines to give a land-cover effect to
+    -- is not "ground already taken", because nothing is computed on it. It
+    claims nothing.
+
+    The precedent is the unpinned row just below: an unpinned row is off the
+    sandbox, so it must not block new ground either. A skipped row is the same
+    situation one step further along -- the run does not compose it *and* does
+    not score it.
+
+    Measured on the committed staged scenario before this rule: three
+    AI-drafted ``road`` rows, which the engine skips ("a new road is a
+    permeability and roughness question this screening model does not
+    parameterise"), claimed 6,482 of the scenario's 6,664 cells -- 37 % of the
+    district -- so the proposer had no free ground left to offer any kind of
+    site, and the flood axis could not name a single detention basin on a
+    district that has four.
     """
     owners: dict[tuple[int, int], str] = {}
 
@@ -260,6 +280,10 @@ def _owner_map(
             # so it must not block new ground either.
             if feature.get("pinned") is False:
                 continue
+            # A row the engine skips is not computed on, so it is not prior
+            # work and it claims no ground. Same rule, one step further along.
+            if not effect_is_scored(_feature_kind(feature)):
+                continue
             coords = (feature.get("geometry") or {}).get("coordinates")
             if not coords:
                 continue
@@ -270,6 +294,8 @@ def _owner_map(
     for feature in (extra_features or []):
         if not isinstance(feature, Mapping):
             continue
+        if not effect_is_scored(_feature_kind(feature)):
+            continue
         coords = (feature.get("geometry") or {}).get("coordinates")
         if not coords:
             continue
@@ -278,6 +304,24 @@ def _owner_map(
             owners.setdefault((int(cell[0]), int(cell[1])), owner)
 
     return owners
+
+
+def _feature_kind(feature: Mapping[str, Any]) -> str:
+    """The intervention kind of one feature, in whichever spelling it uses.
+
+    The wire is camelCase (``interventionType``), the stored row is snake_case
+    (``intervention_type``), and ``kind`` appears in the AI-plan payload. All
+    three exist in this codebase, and reading one spelling only would make the
+    claim set silently empty (or silently full) depending on which one the
+    row happened to use -- the same failure the feature loader already documents.
+    """
+    props = feature.get("properties") or {}
+    for source in (feature, props):
+        for key in ("intervention_type", "interventionType", "kind"):
+            value = source.get(key)
+            if value:
+                return str(value)
+    return ""
 
 
 def claimed_owners(

@@ -30,7 +30,7 @@ export interface SandboxFeature {
   source?: 'manual' | 'ai'
 }
 
-/** One of the three suggestions shown under a run's card. */
+/** One of the suggestions shown under a run's card: one site per axis. */
 export interface SandboxSuggestion {
   axis: string
   kind: string

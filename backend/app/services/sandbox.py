@@ -2,10 +2,11 @@
 
 The loop this module serves:
 
-1. A run finishes and its card offers **three grounded suggestions** -- the
-   strongest candidate site on each of the drainage, heat and runoff axes, read
-   from the rasters by ``suggest.py``. Nothing about them is templated: a
-   suggestion is a real footprint with the estimate it would produce.
+1. A run finishes and its card offers **one grounded suggestion per axis** --
+   the strongest candidate site on each of the drainage, flood, heat and runoff
+   axes, read from the rasters by ``suggest.py``. Nothing about them is
+   templated: a suggestion is a real footprint with the estimate it would
+   produce, and the same footprint is never offered twice.
 2. Or the user writes an intervention in natural language, which goes through
    ``ai_plan`` exactly as before.
 3. Either way the user then sees an **input card**: the values the run will
@@ -24,6 +25,7 @@ projects, as every run already does.
 
 from __future__ import annotations
 
+import json
 import re
 from functools import lru_cache
 from typing import Any
@@ -273,13 +275,28 @@ def run_suggestions(scene_id: str, rainfall_mm: float,
     taken = claimed_cells(grids, taken_plans)
 
     out: list[dict[str, Any]] = []
+    # The card shows **one site per axis**, and never the same site twice.
+    #
+    # The axes draw on overlapping pools -- the flood axis reads the reservoir
+    # pool, which the drainage axis also reads -- so the same geometry can be
+    # the best candidate on two axes. Two buttons offering one footprint under
+    # two labels is not two options; it is one option twice, and the planner
+    # cannot tell which one they are choosing. The geometry is the identity
+    # here (two candidates of the same kind are the same polygon), so the
+    # second occurrence is skipped and the axis moves on to its next
+    # candidate.
+    seen_geometry: set[str] = set()
     for axis in ranked.get("axes", []):
         for candidate in axis.get("candidates", []):
             feature = candidate["plan"]["interventions"][0]
             if taken and _cells_of(grids, feature["geometry"]) & taken:
                 continue
+            geometry_key = json.dumps(feature["geometry"], sort_keys=True)
+            if geometry_key in seen_geometry:
+                continue
             kind = candidate["kind"]
             label = KIND_LABEL.get(kind, kind.replace("_", " "))
+            seen_geometry.add(geometry_key)
             out.append({
                 "axis": axis["axis"],
                 "kind": kind,
