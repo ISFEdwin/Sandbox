@@ -1,5 +1,55 @@
-# HACK4SDG - Sandbox
-A Hack4SDG prototype for exploring planning scenarios in Hung Shui Kiu / Ha Tsuen (HSK/HT). It renders terrain, buildings and environmental overlays (heat, flood/wet grid, ventilation corridors) in a 3D Cesium viewer. You can place interventions, re-run the analysis and ask questions about a run in a grounded chat panel.
+# Sandbox — cumulative screening for coordinated developments
+
+A 3D planning sandbox for Hung Shui Kiu / Ha Tsuen (HSK/HT) in the Northern Metropolis. Place the developments that are
+actually planned for a district, turn them on and off, swap one for another, change rainfall and temperature, and see
+what each combination does to flood storage and surface heat — in seconds, before a design is fixed.
+
+The prototype was built for Hack4SDG (Team 1007). It is now being taken forward as **a coordination register**: the
+shared, dated record of what each project in a district assumed about its neighbours.
+
+> **Status:** prototype complete and running; the register capabilities are not built yet.
+> See [STATUS.md](STATUS.md) for what exists today and [TODO.md](TODO.md) for what comes next.
+
+## The problem it addresses
+
+Three specific failures, not one general complaint:
+
+1. **Coordination.** The Northern Metropolis is delivered in stages, by different parties, at different speeds. HSK and
+   San Tin are under construction while other areas are still in planning. A CDE coordinates information *inside* one
+   project; nothing coordinates *between* projects. Each new development is assessed in isolation, ignoring the
+   neighbour that is half-built or the phase that arrives in 2029.
+2. **Legal compliance.** Cumulative and attributed impact is already required, not optional: EIAO Technical Memorandum
+   §4.3.4 (cumulative effects where projects interact) and §4.3.1(c)(iii) (differentiate the impact caused by this
+   project from that caused by other projects); Air Ventilation Assessment under TC 1/06 (compare design options by
+   spatial-average velocity ratio); Sustainable Building Design Guidelines under PNAP APP-152, where compliance gates
+   GFA concessions. Each needs a comparison between options. Today each costs days of specialist time.
+3. **Dirty testing.** Real schemes are tested against messy conditions — estimated inputs, neighbours not yet built,
+   phases out of order, assumptions that change mid-design. Engineering models are built for one calibrated,
+   authoritative run. They are the wrong shape for thirty quick comparisons.
+
+## What the sandbox does
+
+- **Toggle projects.** The planned projects for the area, with real footprints, switched on and off in combination.
+- **Swap and compare.** Change the set of projects in the scenario and compare the resulting flood deficit and heat
+  field against the previous run.
+- **Add environmental variables.** Rainfall intensity and duration, surface temperature, sea level, ventilation. The
+  parameter card publishes every assumption a run used, including what the model does not know.
+- **Attribute, don't grade.** Three axes — drainage volume, surface temperature, wind geometry — reported separately.
+  There is deliberately no combined score, and no pass/fail verdict.
+
+Screening only. It sits in front of the statutory hydraulic assessment; it does not replace it, and every output is
+labelled as derived rather than certified.
+
+## Who it is for
+
+| Role | What they do |
+|---|---|
+| District coordinator (public sector) | Holds the register for one development area; sees the cumulative picture across all projects and phases |
+| Developer | Declares their project's massing, drainage and phasing; receives a dated statement of what they inherited versus what they caused |
+| Consultant / QP | Prepares and submits the declaration on the developer's behalf |
+
+How this is paid for — licensing structure, tier boundaries and the tariff route — is documented in the internal
+planning notes rather than here, because this repository is public.
 
 ## Features
 
@@ -37,6 +87,22 @@ Telling a question apart from an intervention request is done by fixed rules, no
 - **Backend:** FastAPI (Python 3.14), with numpy, scipy, rasterio and trimesh for the analysis. Data is stored as files in `backend/data` (`STORE_MODE=file`).
 - **Frontend:** React 18, TypeScript, Vite, Cesium, MUI and Zustand.
 - **Contracts:** `contracts/openapi.json` and `contracts/intent_vocabulary.json`.
+
+## API surface
+
+Routes are grouped under `/scenes/{scene_id}`. The ones that matter for the register direction:
+
+| Route | Purpose |
+|---|---|
+| `POST /scenes/{id}/run` | Run the scenario |
+| `POST /scenes/{id}/scenario/compare`, `/scenario/evaluate` | Compare and evaluate alternatives |
+| `GET /scenes/{id}/scenarios` | List saved scenarios |
+| `GET /scenes/{id}/ledger` | Storage ledger for the run |
+| `GET /scenes/{id}/parameter-card` | Every assumption the run used, plus what is unknown |
+| `GET /scenes/{id}/sea-level`, `/heat-field`, `/ventilation/corridors` | Individual hazard layers |
+| `GET/POST /scenes/{id}/pins`, `/pins/{feature_id}/pin` | Pin and unpin features across runs |
+| `POST /chat`, `/chat/stream` | Grounded chat over a run |
+| `/plans/{plan_id}` and `/plans/{plan_id}/interventions` | Persisted plans and interventions |
 
 ## Running locally
 
@@ -84,3 +150,16 @@ cd frontend && npx tsc --noEmit && npm run lint && npm test && npm run build
 ```
 
 CI runs the same checks (`.github/workflows/ci.yml`).
+
+## Limitations
+
+- One study window (43.5 ha in HSK/HT). Not district-wide.
+- Screening-grade: simplified hydrology, no piped network, no calibrated hydraulics.
+- Some land-cover and soil inputs are estimated rather than surveyed; the parameter card says which.
+- Single-tenant file store. It will not survive a second concurrent customer.
+- Planned projects can be toggled, but construction phasing and overlapping timelines are not yet modelled.
+
+## Licence and attribution
+
+Built for Hack4SDG 2026 by Team 1007: Leung Hoi Tung Bernice, Fang Yi Zhou Edwin, Chen Xu, Chloe Chik, Chu Ka Wai Katie.
+Outputs are screening estimates and are not a statutory environmental assessment.
