@@ -1378,6 +1378,13 @@ def ledger_for_scenario(
     scen = _scenario_ledger(grids, trial, cn_over, rainfall_mm, storage_over)
 
     d_unstored = scen["unstoredM3"] - base["unstoredM3"]
+    # The consent view of the scenario: what, if anything, needs a sign-off.
+    # A declared feature over the coverage caps is applied and flagged (see
+    # ``app.services.consent``), so the flag has to surface here too -- a
+    # coordinator reads the scenario, not the individual features.
+    from app.services import consent
+
+    reviews = [a["consentReview"] for a in applied if a.get("consentReview")]
     return {
         "rainfallMm": rainfall_mm,
         "baseline": base,
@@ -1390,6 +1397,7 @@ def ledger_for_scenario(
         "worsens": d_unstored > 1.0,
         "interventionsApplied": applied,
         "interventionsSkipped": skipped,
+        "consentReview": consent.roll_up(reviews),
         "interpretation": (
             "bufferDeficitM3 is today's unstored water: runoff with nowhere to go. "
             "deltaUnstoredM3 is the change a scenario makes to it -- positive "
@@ -1512,6 +1520,10 @@ def apply_interventions(
     applied: list[dict[str, Any]] = []
     skipped: list[dict[str, Any]] = []
 
+    # Imported here, not at module level: ``consent`` reads the caps from this
+    # module, so a module-level import would be a cycle.
+    from app.services import consent
+
     # Every cell an earlier intervention already reworked. Two guards read it:
     # the per-intervention cap below, and the cumulative one. Without the second,
     # five individually-legal 24% interventions compose into a 100% land-cover
@@ -1576,33 +1588,51 @@ def apply_interventions(
         # reworks a quarter of the area is a land-use change, not an intervention,
         # so it is refused and reported rather than quietly applied.
         coverage = len(cells) / site_cells
+        # The coverage guards, and who owns them.
+        #
+        # The numbers are the same in both cases -- 25% for one intervention,
+        # 40% for the scenario -- but *what happens* at the threshold depends
+        # on whether the feature has been declared (see ``app.services.consent``):
+        #
+        # - an undeclared feature over the cap is refused, exactly as before. A
+        #   draft is never computed on, and this guard is one of the reasons.
+        # - a **declared** feature over the cap is applied and flagged: the
+        #   register's job is to hold what was declared, including the parts
+        #   that need a counter-signature, so refusing would drop exactly the
+        #   information the register exists to keep.
+        declared = consent.feature_is_declared(feature)
+        consent_review: dict[str, Any] | None = None
         if coverage > MAX_INTERVENTION_COVERAGE:
-            skipped.append({
-                "id": fid, "kind": kind,
-                "why": (f"polygon covers {coverage:.1%} of the study area, over "
-                        f"the {MAX_INTERVENTION_COVERAGE:.0%} limit for a single "
-                        f"intervention; this is a land-use change, not a "
-                        f"retention feature -- it needs re-siting"),
-                "coverageFraction": round(coverage, 4),
-            })
-            continue
+            if not declared:
+                skipped.append({
+                    "id": fid, "kind": kind,
+                    "why": (f"polygon covers {coverage:.1%} of the study area, "
+                            f"over the {MAX_INTERVENTION_COVERAGE:.0%} limit for a "
+                            f"single intervention; this is a land-use change, not a "
+                            f"retention feature -- it needs re-siting"),
+                    "coverageFraction": round(coverage, 4),
+                })
+                continue
+            consent_review = consent.major_change_review(coverage)
 
         # Cumulative guard. Measured on the UNION, so overlapping interventions
         # are not double-counted -- three basins stacked on the same basin are
         # still one basin's worth of land.
         total_coverage = len(claimed | set(cells)) / site_cells
         if total_coverage > MAX_TOTAL_COVERAGE:
-            skipped.append({
-                "id": fid, "kind": kind,
-                "why": (f"applying this would bring the scenario's total reworked "
-                        f"land to {total_coverage:.1%}, over the "
-                        f"{MAX_TOTAL_COVERAGE:.0%} cumulative limit; the "
-                        f"interventions already selected use "
-                        f"{len(claimed) / site_cells:.1%}"),
-                "coverageFraction": round(coverage, 4),
-                "totalCoverageFraction": round(total_coverage, 4),
-            })
-            continue
+            if not declared:
+                skipped.append({
+                    "id": fid, "kind": kind,
+                    "why": (f"applying this would bring the scenario's total reworked "
+                            f"land to {total_coverage:.1%}, over the "
+                            f"{MAX_TOTAL_COVERAGE:.0%} cumulative limit; the "
+                            f"interventions already selected use "
+                            f"{len(claimed) / site_cells:.1%}"),
+                    "coverageFraction": round(coverage, 4),
+                    "totalCoverageFraction": round(total_coverage, 4),
+                })
+                continue
+            consent_review = consent.district_composition_review(total_coverage)
 
         # The planner's own usable storage depth for this intervention, if given.
         # Validated rather than trusted: a depth of 40 m over a hectare is not a
@@ -1655,6 +1685,10 @@ def apply_interventions(
             "storageDepthM": depth,
             "why": effect["why"],
             "basis": params.get("basis"),
+            # Present only when the feature needs a sign-off: a declared
+            # project over the single-intervention cap, or a declared scenario
+            # over the cumulative cap. See ``app.services.consent``.
+            **({"consentReview": consent_review} if consent_review else {}),
         })
 
     return trial, cn_over, storage_over, applied, skipped

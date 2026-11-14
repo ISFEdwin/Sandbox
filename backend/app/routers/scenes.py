@@ -7,6 +7,7 @@ Status codes are the spec's: 201 create, 200 read/update, 204 delete, 404 with
 import json
 import math
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 from fastapi import APIRouter, HTTPException, Response, status
@@ -412,6 +413,14 @@ def intervention_features(plan_id: str | None) -> list[dict]:
     collection = scene_service.list_interventions(plan_id)
     features = getattr(collection, "features", collection)
     out: list[dict] = []
+    # A plan built from a declaration carries the declaration's identity on the
+    # plan (``params.declarationId`` / ``declarationStatus``). The consent layer
+    # reads those markers on the *feature* -- a declared feature over the
+    # coverage caps is applied and flagged for review rather than refused (see
+    # ``app.services.consent``) -- so they are copied down here, where the plan
+    # is read. F1 replaces the markers with a resolved declaration; nothing
+    # else changes.
+    plan_params = _plan_declaration_markers(plan_id)
     for f in features or []:
         item = f if isinstance(f, dict) else f.model_dump(by_alias=True)
         # A wire feature wraps the payload in geometry/properties; the ledger wants
@@ -426,14 +435,40 @@ def intervention_features(plan_id: str | None) -> list[dict]:
                 or props.get("interventionType") or props.get("intervention_type")
                 or item.get("kind") or props.get("kind"))
         pinned = params.get("pinned", item.get("pinned", props.get("pinned", True)))
+        feature_params = dict(params)
+        for marker, value in plan_params.items():
+            feature_params.setdefault(marker, value)
         out.append({
             "id": item.get("id") or props.get("id"),
             "intervention_type": kind,
             "geometry": item.get("geometry"),
-            "params": params,
+            "params": feature_params,
             "pinned": bool(pinned),
         })
     return out
+
+
+def _plan_declaration_markers(plan_id: str) -> dict[str, Any]:
+    """The declaration markers a plan carries, if it came from a declaration.
+
+    ``declarationId`` names the declaration the plan was built from and
+    ``declarationStatus`` says whether it has been accepted. A plan with
+    neither is an ordinary plan -- a user's own work on the sandbox -- and its
+    features are not declared, which is what the consent layer needs to know.
+    """
+    from app import db
+
+    try:
+        doc = db.read_doc(db.plan_path(plan_id))
+    except Exception:  # noqa: BLE001 - a missing plan has no markers
+        return {}
+    params = (doc or {}).get("params") or {}
+    markers: dict[str, Any] = {}
+    for key in ("declarationId", "declarationStatus"):
+        value = params.get(key)
+        if value:
+            markers[key] = value
+    return markers
 
 
 def intervention_features_many(plan_ids: list[str]) -> list[dict]:
