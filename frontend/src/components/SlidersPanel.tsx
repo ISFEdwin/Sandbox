@@ -11,7 +11,9 @@ import Button from '@mui/material/Button'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 
+import GaugeControl from '@/components/GaugeControl'
 import HudPanel from '@/components/HudPanel'
+import { forgetTypedRainfall } from '@/state/gaugeBaseline'
 import { usePlanStore } from '@/state/planStore'
 import { runPlanIds, useSandboxStore } from '@/state/sandboxStore'
 import { useSceneStore } from '@/state/sceneStore'
@@ -20,6 +22,12 @@ import SliderField from './SliderField'
 export default function SlidersPanel() {
   const scene = useSceneStore((s) => s.scene)
   const setEnvParams = useSceneStore((s) => s.setEnvParams)
+  const setInputProvenance = useSceneStore((s) => s.setInputProvenance)
+  const editWater = (patch: Parameters<typeof setEnvParams>[0]) => {
+    forgetTypedRainfall()
+    setInputProvenance(null)
+    setEnvParams(patch)
+  }
   const run = useSceneStore((s) => s.run)
   const running = useSceneStore((s) => s.running)
   const runError = useSceneStore((s) => s.runError)
@@ -71,11 +79,13 @@ export default function SlidersPanel() {
   return (
     <HudPanel title="Scenario Inputs">
       <Stack spacing={1.5}>
+        <GaugeControl />
         <SliderField
           label="Rainfall intensity"
           unit="mm/hr"
           min={0}
           max={200}
+          step={0.1}
           value={intensity}
           marks={[
             { value: 30, label: '30' },
@@ -83,7 +93,7 @@ export default function SlidersPanel() {
             { value: 70, label: '70' },
           ]}
           caption={`Amber 30 · Red 50 · Black 70 mm/hr. At ${intensity} mm/hr × ${durationH} h = ${totalMm.toFixed(0)} mm total.`}
-          onChange={(precipitation) => setEnvParams({ precipitation })}
+          onChange={(precipitation) => editWater({ precipitation })}
         />
 
         <Box>
@@ -96,7 +106,7 @@ export default function SlidersPanel() {
                 key={sig.label}
                 size="small"
                 variant="outlined"
-                onClick={() => setEnvParams({ precipitation: sig.value })}
+                onClick={() => editWater({ precipitation: sig.value })}
                 sx={{
                   flex: 1,
                   minWidth: 0,
@@ -133,7 +143,7 @@ export default function SlidersPanel() {
             { value: 6, label: '6' },
           ]}
           caption="Storm length. Intensity × duration = total depth for runoff."
-          onChange={(durationHours) => setEnvParams({ durationHours })}
+          onChange={(durationHours) => editWater({ durationHours })}
         />
 
         <Box>
@@ -146,7 +156,7 @@ export default function SlidersPanel() {
                 key={t.value}
                 size="small"
                 variant={tideState === t.value ? 'contained' : 'outlined'}
-                onClick={() => setEnvParams({ tideState: t.value })}
+                onClick={() => editWater({ tideState: t.value })}
                 sx={{
                   flex: 1,
                   minWidth: 0,

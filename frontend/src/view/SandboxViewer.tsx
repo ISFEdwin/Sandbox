@@ -293,6 +293,10 @@ export default function SandboxViewer({ className }: SandboxViewerProps = {}) {
   selectedProjectIdsRef.current = selectedProjectIds
   const setPlanProjectLoading = useSceneStore((s) => s.setPlanProjectLoading)
   const layers = useSceneStore((s) => s.layers)
+  const stormFrameUrl = useSceneStore((s) => s.stormFrameUrl)
+  // A newer draped image invalidates the previous "turn requestRenderMode
+  // back on" timer, so a playing storm does not re-enable it mid-frame.
+  const drapePaint = useRef(0)
   const viewMode = useSceneStore((s) => s.viewMode)
 
   // ---- create the viewer once -------------------------------------------
@@ -506,7 +510,7 @@ export default function SandboxViewer({ className }: SandboxViewerProps = {}) {
     if (!rectangle) return
 
     const wanted: Array<['wetGrid' | 'heatmap', string | null | undefined, number]> = [
-      ['wetGrid', terrainMeta.wetGridUrl, 0.75],
+      ['wetGrid', stormFrameUrl ?? terrainMeta.wetGridUrl, 0.75],
       ['heatmap', terrainMeta.heatmapUrl, 0.6],
     ]
 
@@ -530,11 +534,37 @@ export default function SandboxViewer({ className }: SandboxViewerProps = {}) {
 
     const drape = Boolean(terrainMeta.terrain3DUrl || terrainMeta.buildings3DUrl || terrainMeta.buildings3dUrl)
     if (drape) {
+      // A draped PNG is classified a few frames after it decodes.
+      // requestRenderMode never schedules those frames, so a storm hour
+      // stays invisible. While a storm frame is up, keep rendering; a
+      // one-shot run overlay only needs a short burst.
+      const token = ++drapePaint.current
+      viewer.scene.requestRenderMode = false
+      const restore = window.setTimeout(() => {
+        if (stormFrameUrl) return
+        if (drapePaint.current === token && isLive(viewer)) {
+          viewer.scene.requestRenderMode = true
+        }
+      }, 1400)
       for (const [key, url, alpha] of wanted) {
         const cur = drapedRef.current[key]
         const want = layers[key] && Boolean(url)
-        if (cur && (!want || cur.url !== url)) {
+        if (cur && !want) {
           const ent = viewer.entities.getById(cur.id)
+          if (ent) viewer.entities.remove(ent)
+          drapedRef.current[key] = null
+        }
+        if (cur && want && cur.url !== url) {
+          const ent = viewer.entities.getById(cur.id)
+          if (ent?.rectangle) {
+            ent.rectangle.material = new ImageMaterialProperty({
+              image: url as string,
+              transparent: true,
+              color: Color.WHITE.withAlpha(Math.min(1, alpha + 0.2)),
+            })
+            drapedRef.current[key] = { id: ent.id, url: url as string }
+            continue
+          }
           if (ent) viewer.entities.remove(ent)
           drapedRef.current[key] = null
         }
@@ -557,6 +587,7 @@ export default function SandboxViewer({ className }: SandboxViewerProps = {}) {
       viewer.scene.requestRender()
       return () => {
         cancelled = true
+        window.clearTimeout(restore)
       }
     }
 
@@ -609,7 +640,7 @@ export default function SandboxViewer({ className }: SandboxViewerProps = {}) {
     return () => {
       cancelled = true
     }
-  }, [layers, terrainMeta])
+  }, [layers, terrainMeta, stormFrameUrl])
 
   // ---- initial camera placement -----------------------------------------
   useEffect(() => {

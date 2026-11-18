@@ -18,6 +18,19 @@ function m3(value: number): string {
   return Math.round(value).toLocaleString('en-US')
 }
 
+function InputRow({ label }: { label: string }) {
+  return (
+    <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.75, gap: 1 }}>
+      <Typography className="hud-label" sx={{ fontSize: 8.5, flexShrink: 0 }}>
+        Input
+      </Typography>
+      <Typography className="hud-mono" sx={{ fontSize: 10, textAlign: 'right' }}>
+        {label}
+      </Typography>
+    </Stack>
+  )
+}
+
 function Stat({ label, value, accent }: { label: string; value: string; accent?: string }) {
   return (
     <Box>
@@ -34,9 +47,22 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
   )
 }
 
+function inputLabel(
+  provenance: { label: string } | null,
+  rainfallMm: number,
+): string {
+  if (provenance) return provenance.label
+  return `typed ${rainfallMm.toFixed(1)} mm`
+}
+
 export default function StatsPanel() {
   const runResult = useSceneStore((s) => s.runResult)
   const running = useSceneStore((s) => s.running)
+  const provenance = useSceneStore((s) => s.inputProvenance)
+  const runInputLabel = useSceneStore((s) => s.runInputLabel)
+  const scene = useSceneStore((s) => s.scene)
+  const typedMm = Number(scene?.envParams.precipitation ?? 50)
+    * Number(scene?.envParams.durationHours ?? 1)
 
   if (!runResult && !running) {
     return (
@@ -45,6 +71,7 @@ export default function StatsPanel() {
           Press <strong style={{ color: '#5cff9d' }}>Run</strong> to compute the
           buffer deficit, wet area and heat index at the chosen rainfall.
         </Typography>
+        <InputRow label={inputLabel(provenance, typedMm)} />
       </HudPanel>
     )
   }
@@ -55,6 +82,7 @@ export default function StatsPanel() {
         <Typography className="hud-shimmer" variant="caption">
           Computing the buffer deficit, wet area and heat index…
         </Typography>
+        <InputRow label={inputLabel(provenance, typedMm)} />
       </HudPanel>
     )
   }
@@ -91,6 +119,7 @@ export default function StatsPanel() {
       }
       sx={{ width: '100%' }}
     >
+      <InputRow label={runInputLabel ?? inputLabel(null, inputs.rainfallMm)} />
       <Stack direction="row" spacing={2} sx={{ mb: 1.25 }}>
         <Stat
           label="Flood extent (≥0.3 m)"

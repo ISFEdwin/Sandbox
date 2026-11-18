@@ -1548,6 +1548,63 @@ def get_drainage_hourly(
     if "error" in result:
         raise HTTPException(status_code=422, detail=result["error"])
     result["sceneId"] = scene_id
+    from app.services.demo_features import SCREENING_LINE, render_hourly_frames
+
+    hyeto = result.get("hyetograph") or {}
+    frames = render_hourly_frames(
+        grids, list(hyeto.get("mmPerHour") or []), str(hyeto.get("name") or "custom")
+    )
+    standing = {row["hour"]: row.get("standingM3") for row in result.get("hourly") or []}
+    for frame in frames:
+        frame["standingM3"] = standing.get(frame["hour"])
+    result["frames"] = frames
+    result["screeningLine"] = SCREENING_LINE
+    return result
+
+
+@router.get("/scenes/{scene_id}/gauge")
+def get_gauge(scene_id: str, mode: str = "live") -> dict:
+    """GET /api/scenes/{sceneId}/gauge?mode=live|recorded
+
+    A labelled rainfall (and, when the feed has it, tide) for the same
+    inputs Run already sends. ``live`` reads HKO Open Data. ``recorded``
+    is the cited 2023-09-07 peak hour, so a video can be re-run when the
+    live hour is dry. A live failure returns the recorded trace and says so.
+    """
+    scene_service.get_scene(scene_id)
+    from app.services.demo_features import gauge_reading
+
+    reading = gauge_reading(mode)
+    if "error" in reading:
+        raise HTTPException(status_code=422, detail=reading["error"])
+    reading["sceneId"] = scene_id
+    return reading
+
+
+@router.get("/scenes/{scene_id}/ledger/sensitivity")
+def get_ledger_sensitivity(
+    scene_id: str,
+    rainfall_mm: float | None = None,
+    rainfallMm: float | None = None,  # noqa: N803
+    factor: float = 0.2,
+) -> dict:
+    """GET /api/scenes/{sceneId}/ledger/sensitivity?rainfallMm=50
+
+    Unstored volume at the given rainfall and at ±``factor`` (default 20%),
+    each one a ``storage_ledger`` call. No combined score.
+    """
+    if rainfallMm is not None:
+        rainfall_mm = rainfallMm
+    if rainfall_mm is None:
+        raise HTTPException(status_code=422, detail="rainfallMm is required")
+    scene_service.get_scene(scene_id)
+    grids = _require_grids()
+    from app.services.demo_features import rainfall_sensitivity
+
+    result = rainfall_sensitivity(grids, float(rainfall_mm), factor)
+    if "error" in result:
+        raise HTTPException(status_code=422, detail=result["error"])
+    result["sceneId"] = scene_id
     return result
 
 
