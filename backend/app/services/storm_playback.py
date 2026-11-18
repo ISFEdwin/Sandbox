@@ -55,6 +55,14 @@ _DEPTH_COLOURS = (
     (210, 255, 120),
 )
 
+# Below this the cell is not painted. The march spreads retained water over the
+# whole catchment -- every cell carries a millimetre or two of film, so a ramp
+# that started at 1 mm tinted the entire district and the map read as a coloured
+# wash rather than as ponds. Five millimetres is the point where retained depth
+# is a wet surface you could see; anything shallower is left transparent and the
+# readout still reports it in the totals.
+_MIN_PAINTED_DEPTH_M = 0.005
+
 
 def _depth_rgba(depth: np.ndarray) -> np.ndarray:
     """Retained depth (m) to RGBA with a fixed metric scale."""
@@ -63,9 +71,16 @@ def _depth_rgba(depth: np.ndarray) -> np.ndarray:
     flat = np.clip(depth.reshape(-1).astype(np.float64), 0.0, stops[-1])
     rgb = np.stack([np.interp(flat, stops, colours[:, i]) for i in range(3)],
                    axis=1)
-    # Dry cells are fully transparent; alpha rises fast so even a 2 cm film is
-    # visible, then saturates rather than becoming an opaque wall.
-    alpha = np.where(flat <= 0.0, 0.0, np.clip(0.25 + flat * 3.0, 0.0, 0.82)) * 255.0
+    # Transparent under the threshold, then a light tint that strengthens with
+    # depth and saturates short of opaque so the terrain and buildings stay
+    # readable underneath. Not a per-frame rescale: 3 cm should be as blue in
+    # hour 2 as in hour 7.
+    painted = flat >= _MIN_PAINTED_DEPTH_M
+    alpha = np.where(
+        painted,
+        np.clip(0.12 + (flat - _MIN_PAINTED_DEPTH_M) * 3.0, 0.0, 0.82),
+        0.0,
+    ) * 255.0
     rgba = np.concatenate([rgb, alpha[:, None]], axis=1)
     return rgba.reshape(depth.shape + (4,)).astype(np.uint8)
 
@@ -168,7 +183,8 @@ def render_playback(
         "playbackId": playback_id,
         "hours": hours,
         "frameNote": (
-            "Each frame is that hour's retained water from the same hourly march; "
-            "the district standing volume is in the readout beside it."
+            "Each frame is that hour's retained water from the same hourly march, "
+            "on one fixed colour scale; cells under 5 mm are left unpainted and the "
+            "district standing volume is in the readout beside it."
         ),
     }

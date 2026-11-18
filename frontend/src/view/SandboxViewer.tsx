@@ -137,6 +137,39 @@ function isLive(viewer: Viewer | null): viewer is Viewer {
 }
 
 /**
+ * Fetch and decode an overlay PNG *before* Cesium is handed it.
+ *
+ * An `ImageMaterialProperty` given a URL string draws `Material.DefaultImageId`
+ * — a 1x1 **white** pixel — until the image resolves. The material covers the
+ * whole overlay rectangle, so every frame between the entity being added and the
+ * texture arriving painted the study area solid white. With `requestRenderMode`
+ * on, the scene then had no reason to draw again: the white stayed on screen
+ * until the user happened to move the camera. That is the "the map went
+ * completely white when the playhead loaded" report.
+ *
+ * `ImageMaterialProperty.image` also accepts an `HTMLImageElement`, so decoding
+ * first and handing over the element means the first frame that contains the
+ * entity already has the real texture. `null` is a failed fetch: the caller
+ * leaves the previous frame up rather than painting white.
+ */
+function decodeOverlayImage(url: string): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    const image = new Image()
+    // Both keep the decode off the frame that shows it.
+    image.decoding = 'sync'
+    image.onload = () => {
+      if (typeof image.decode === 'function') {
+        image.decode().then(() => resolve(image)).catch(() => resolve(image))
+        return
+      }
+      resolve(image)
+    }
+    image.onerror = () => resolve(null)
+    image.src = url
+  })
+}
+
+/**
  * Records why an overlay is not on screen, so the panel can say "failed" rather
  * than leaving a switch that silently does nothing.
  */
@@ -564,33 +597,71 @@ export default function SandboxViewer({ className }: SandboxViewerProps = {}) {
 
     const drape = Boolean(terrainMeta.terrain3DUrl || terrainMeta.buildings3DUrl || terrainMeta.buildings3dUrl)
     if (drape) {
-      for (const [key, url, alpha] of wanted) {
-        const cur = drapedRef.current[key]
-        const want = layers[key] && Boolean(url)
-        if (cur && (!want || cur.url !== url)) {
-          const ent = viewer.entities.getById(cur.id)
-          if (ent) viewer.entities.remove(ent)
-          drapedRef.current[key] = null
+      // Dropping the old entity before the new texture exists is what put white
+      // on the map (see `decodeOverlayImage`). Swap in the other order: decode
+      // the replacement, add it, and only then retire the previous entity. A
+      // frame that lands mid-swap shows the old overlay, never a blank one.
+      const applyDrape = async () => {
+        for (const [key, url, alpha] of wanted) {
+          if (cancelled) return
+          const want = layers[key] && Boolean(url)
+          const current = drapedRef.current[key]
+          if (!want) {
+            if (current) {
+              const entity = viewer.entities.getById(current.id)
+              if (entity) viewer.entities.remove(entity)
+              drapedRef.current[key] = null
+            }
+            continue
+          }
+          const urlFor = url as string
+          if (current && current.url === urlFor) continue
+
+          const image = await decodeOverlayImage(urlFor)
+          if (cancelled) return
+          if (!image) {
+            setOverlayStatus(key, 'failed')
+            continue
+          }
+          const live = viewerRef.current
+          if (!isLive(live)) return
+          // The store is the truth, not the closure: the user may have switched
+          // the layer off while the image was decoding.
+          if (!useSceneStore.getState().layers[key]) continue
+
+          const entity = live.entities.add({
+            name: key === 'wetGrid' ? 'Precipitation flow'
+              : key === 'heatmap' ? 'Heat map overlay'
+              : 'Wind shelter diagnostic',
+            rectangle: {
+              coordinates: rectangle,
+              material: new ImageMaterialProperty({
+                image,
+                transparent: true,
+                color: Color.WHITE.withAlpha(Math.min(1, alpha + 0.2)),
+              }),
+              classificationType: ClassificationType.BOTH,
+            },
+          })
+          const previous = drapedRef.current[key]
+          drapedRef.current[key] = { id: entity.id, url: urlFor }
+          if (previous) {
+            const stale = live.entities.getById(previous.id)
+            if (stale) live.entities.remove(stale)
+          }
+          setOverlayStatus(key, 'ready')
+          live.scene.requestRender()
+          // One more request after the swap. The texture upload for a freshly
+          // created material can land after this frame, and with
+          // `requestRenderMode` on nothing else would ask for another -- the
+          // white default texture is exactly the state that then sticks.
+          const repaint = live
+          setTimeout(() => {
+            if (isLive(repaint)) repaint.scene.requestRender()
+          }, 150)
         }
-        if (!want || drapedRef.current[key]) continue
-        const ent = viewer.entities.add({
-          name: key === 'wetGrid' ? 'Precipitation flow'
-            : key === 'heatmap' ? 'Heat map overlay'
-            : 'Wind shelter diagnostic',
-          rectangle: {
-            coordinates: rectangle,
-            material: new ImageMaterialProperty({
-              image: url as string,
-              transparent: true,
-              color: Color.WHITE.withAlpha(Math.min(1, alpha + 0.2)),
-            }),
-            classificationType: ClassificationType.BOTH,
-          },
-        })
-        drapedRef.current[key] = { id: ent.id, url: url as string }
-        setOverlayStatus(key, 'ready')
       }
-      viewer.scene.requestRender()
+      void applyDrape()
       return () => {
         cancelled = true
       }

@@ -214,3 +214,37 @@ def test_live_reading_is_never_silently_turned_into_an_intensity() -> None:
     assert reading["usableAsIntensity"] is False
     assert reading["rainfallMmHr"] is None
     assert reading["sinceMidnightMm"] is not None
+
+
+def test_depth_frames_do_not_paint_the_whole_catchment() -> None:
+    """A millimetre film must not tint the district.
+
+    The hourly march spreads retained water over every cell, so a ramp that
+    started at the first non-zero depth painted the entire catchment and the map
+    read as a flat wash rather than as ponds. Under the visible threshold a cell
+    is transparent; above it alpha rises with depth, so a deepening pond reads as
+    deepening, and it saturates instead of becoming an opaque wall.
+    """
+    import numpy as np  # noqa: PLC0415
+
+    from app.services.storm_playback import (  # noqa: PLC0415
+        _MIN_PAINTED_DEPTH_M,
+        _depth_rgba,
+    )
+
+    field = np.array(
+        [0.0, 0.002, _MIN_PAINTED_DEPTH_M - 1e-6, _MIN_PAINTED_DEPTH_M,
+         0.03, 0.10, 0.40, 1.20],
+        dtype=np.float64,
+    ).reshape(2, 4)
+    alpha = _depth_rgba(field)[..., 3]
+
+    assert alpha[0, 0] == 0
+    assert alpha[0, 1] == 0, "a 2 mm film must not be painted"
+    assert alpha[0, 2] == 0, "just under the threshold is still unpainted"
+    assert alpha[0, 3] > 0, "at the threshold the cell is painted"
+
+    painted = [alpha[0, 3], alpha[1, 0], alpha[1, 1], alpha[1, 2], alpha[1, 3]]
+    assert painted == sorted(painted), "deeper must not read as lighter"
+    assert alpha[1, 3] == alpha[1, 2], "the ramp saturates at the top stop"
+    assert alpha[1, 2] < 255, "saturated is not opaque: the terrain must show"
