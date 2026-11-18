@@ -7,7 +7,7 @@ name: ci
 # Not in CI: the browser suites (frontend/scripts/verify-*.mjs). They need both
 # servers up plus Playwright's Chromium, and exit 2 when the servers are
 # missing, so here they could only ever fail. Run them locally before merging a
-# rendering change (see CLAUDE.md, "Commands").
+# rendering change (see README.md, "Checks").
 on:
   pull_request:
   push:
@@ -82,18 +82,23 @@ jobs:
       # The documented first-run step. Every key in the template is empty, so
       # no language model is configured and the chat assembles its template card.
       - run: cp .env.example .env
-      - run: python scripts/preflight.py
-      # Two runners, because the suites are two shapes. Most are standalone
+      - run: python scripts/preflight.py      # Two runners, because the suites are two shapes. Most are standalone
       # scripts with a _run() main that pytest collects nothing from, so pytest
       # alone silently skips most of the checks STATUS.md counts;
       # test_overlay_masking has no __main__ and only runs under pytest. Pick
       # per file, never both.
+      #
+      # The guard test matches the real `if __name__ == "__main__":` line, not
+      # the bare string. tests/test_artefact_drift.py *documents* the words
+      # "__main__ guard" in its module docstring; a bare grep for '__main__'
+      # matched that prose, ran the file as a script, executed zero of its four
+      # pytest tests and exited 0 — a green job with a silently skipped suite.
       - name: Backend suites
         run: |
           failed=""
           for f in tests/test_*.py; do
             echo "::group::$f"
-            if grep -q '__main__' "$f"; then
+            if grep -q '^if __name__ ==' "$f"; then
               python "$f" || failed="$failed $f"
             else
               # No __main__ guard, so pytest is the runner. That is only correct
