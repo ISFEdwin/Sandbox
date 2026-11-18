@@ -55,7 +55,7 @@ import sys
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import numpy as np
 
@@ -870,6 +870,7 @@ def hourly_storm_simulation(
     hyetograph_name: str | None = None,
     initial_retention_fill: float = 0.0,
     drained_m3_per_hour: float | None = None,
+    on_hour: "Callable[[int, np.ndarray, dict[str, Any]], None] | None" = None,
 ) -> dict[str, Any]:
     """Simulate the storm hour by hour, with the retention state carried forward.
 
@@ -1013,6 +1014,15 @@ def hourly_storm_simulation(
             "standingMeanDepthMm": round(
                 standing_m3 / (n * cell_area) * 1000.0, 4),
         })
+
+        # Optional per-hour observer. The map's playhead needs this hour's
+        # retained-depth field, and the field is otherwise local to this loop;
+        # a callback keeps the simulation pure (no file IO, no rendering here)
+        # while letting the caller render or record the frames. The depth array
+        # is a fresh reshape of `pool_m3`, so a caller that keeps it must copy
+        # it -- documented on the callback rather than paid for on every hour.
+        if on_hour is not None:
+            on_hour(h, depth.copy(), hourly_rows[-1])
 
     # --- the whole-simulation identity, enforced --------------------------- #
     # rain_in == stored_gain + drained + standing_end. stored_end counts the

@@ -40,6 +40,7 @@ import { addOnlineProps, type OnlinePropHandle } from './onlineProps'
 import { add3DTileset, type TilesetHandle } from './tilesetLayer'
 import { hk1980ToEcefMatrix } from './hk1980Transform'
 import { addInterventions, type InterventionLayerHandle } from './interventionLayer'
+import { addCorridor, type CorridorHandle } from './corridorLayer'
 import { addProposals, type ProposalLayerHandle } from './proposalLayer'
 import { useSandboxStore } from '@/state/sandboxStore'
 import { publishHeading } from './cameraHeading'
@@ -139,7 +140,11 @@ function isLive(viewer: Viewer | null): viewer is Viewer {
  * Records why an overlay is not on screen, so the panel can say "failed" rather
  * than leaving a switch that silently does nothing.
  */
-function setOverlayStatus(key: 'wetGrid' | 'heatmap', status: string): void {
+function setOverlayStatus(key: 'wetGrid' | 'heatmap' | 'wind', status: string): void {
+  // The wind diagnostic has no pill in `ViewButtons`; its state is the panel's,
+  // not the layer-pill store's. Guarded rather than widening the store with a
+  // third key nothing reads.
+  if (key === 'wind') return
   useOverlayStatus.setState((s) => ({ ...s, [key]: status }))
 }
 
@@ -211,15 +216,21 @@ export default function SandboxViewer({ className }: SandboxViewerProps = {}) {
   // the very surface it describes. A classification rectangle is drawn on whatever
   // geometry is there, so it follows buildings and terrain and does not care how the
   // tile meshes were cleaned or decimated.
-  const drapedRef = useRef<Record<'wetGrid' | 'heatmap', { id: string; url: string } | null>>({
+  const drapedRef = useRef<Record<'wetGrid' | 'heatmap' | 'wind', { id: string; url: string } | null>>({
     wetGrid: null,
     heatmap: null,
+    wind: null,
   })
-  const overlaysRef = useRef<Record<'wetGrid' | 'heatmap', { layer: ImageryLayer; url: string } | null>>({
+  const overlaysRef = useRef<Record<'wetGrid' | 'heatmap' | 'wind', { layer: ImageryLayer; url: string } | null>>({
     wetGrid: null,
     heatmap: null,
+    wind: null,
   })
   const boundaryRef = useRef<string | null>(null)
+  const corridorRef = useRef<CorridorHandle | null>(null)
+
+  const windCorridor = useSceneStore((s) => s.windCorridor)
+  const windDiagnosticUrl = useSceneStore((s) => s.windDiagnosticUrl)
 
   const bbox = useSceneStore((s) => s.scene?.bbox ?? null)
   const terrainMeta = useSceneStore((s) => s.terrain)
@@ -361,8 +372,8 @@ export default function SandboxViewer({ className }: SandboxViewerProps = {}) {
     return () => {
       viewer.camera.changed.removeEventListener(onCameraChanged)
       viewer.camera.moveEnd.removeEventListener(onCameraChanged)
-      overlaysRef.current = { wetGrid: null, heatmap: null }
-      drapedRef.current = { wetGrid: null, heatmap: null }
+      overlaysRef.current = { wetGrid: null, heatmap: null, wind: null }
+      drapedRef.current = { wetGrid: null, heatmap: null, wind: null }
       baseRef.current = null
       boundaryRef.current = null
       viewerRef.current = null
@@ -481,6 +492,28 @@ export default function SandboxViewer({ className }: SandboxViewerProps = {}) {
     boundaryRef.current = id.id
   }, [bbox, layers.boundary, viewMode])
 
+  // ---- prevailing-wind corridor -------------------------------------------
+  //
+  // Geometry only. The line is rebuilt when the board returns a new corridor or
+  // the wind layer is toggled; the panel, not the viewer, owns the caveat.
+  useEffect(() => {
+    const viewer = viewerRef.current
+    if (!isLive(viewer)) return
+
+    corridorRef.current?.dispose()
+    corridorRef.current = null
+    if (!layers.wind || !windCorridor) {
+      viewer.scene.requestRender()
+      return
+    }
+    corridorRef.current = addCorridor(viewer, windCorridor)
+
+    return () => {
+      corridorRef.current?.dispose()
+      corridorRef.current = null
+    }
+  }, [windCorridor, layers.wind])
+
   // ---- the view mode -----------------------------------------------------
   //
   // Keyed on `terrainMeta` as well as the mode, because it dims the base imagery
@@ -505,9 +538,10 @@ export default function SandboxViewer({ className }: SandboxViewerProps = {}) {
     const rectangle = polygonToRectangle(terrainMeta.bbox)
     if (!rectangle) return
 
-    const wanted: Array<['wetGrid' | 'heatmap', string | null | undefined, number]> = [
+    const wanted: Array<['wetGrid' | 'heatmap' | 'wind', string | null | undefined, number]> = [
       ['wetGrid', terrainMeta.wetGridUrl, 0.75],
       ['heatmap', terrainMeta.heatmapUrl, 0.6],
+      ['wind', windDiagnosticUrl, 0.62],
     ]
 
     let cancelled = false
@@ -540,7 +574,9 @@ export default function SandboxViewer({ className }: SandboxViewerProps = {}) {
         }
         if (!want || drapedRef.current[key]) continue
         const ent = viewer.entities.add({
-          name: key === 'wetGrid' ? 'Precipitation flow' : 'Heat map overlay',
+          name: key === 'wetGrid' ? 'Precipitation flow'
+            : key === 'heatmap' ? 'Heat map overlay'
+            : 'Wind shelter diagnostic',
           rectangle: {
             coordinates: rectangle,
             material: new ImageMaterialProperty({
@@ -609,7 +645,7 @@ export default function SandboxViewer({ className }: SandboxViewerProps = {}) {
     return () => {
       cancelled = true
     }
-  }, [layers, terrainMeta])
+  }, [layers, terrainMeta, windDiagnosticUrl])
 
   // ---- initial camera placement -----------------------------------------
   useEffect(() => {

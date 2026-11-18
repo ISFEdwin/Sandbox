@@ -1,14 +1,17 @@
-# Sandbox — cumulative screening for coordinated developments
+# Sandbox — broad-brush comparison for schemes in one district
 
-A 3D planning sandbox for Hung Shui Kiu / Ha Tsuen (HSK/HT) in the Northern Metropolis. Place the developments that are
-actually planned for a district, turn them on and off, swap one for another, change rainfall and temperature, and see
-what each combination does to flood storage and surface heat — in seconds, before a design is fixed.
+A 3D comparison tool for Hung Shui Kiu / Ha Tsuen (HSK/HT) in the Northern Metropolis. Place the developments that are
+actually planned for a district, turn them on and off, add one in a sentence, swap one for another, change rainfall and
+temperature, and see what each combination does — drainage, surface heat, tide, greenery, and the wind channel — in
+seconds, before a design is fixed.
 
-The prototype was built for Hack4SDG (Team 1007). It is now being taken forward as **a coordination register**: the
-shared, dated record of what each project in a district assumed about its neighbours.
+The prototype was built for Hack4SDG (Team 1007). Holding those schemes in one model is what makes the comparison a
+shared picture of what each project assumed about the others. The dated register is that consequence. The comparison
+is the product. The five edges, and where each one stands, are the ground truth in [STATUS.md](STATUS.md).
 
-> **Status:** prototype complete and running; the register capabilities are not built yet.
-> See [STATUS.md](STATUS.md) for what exists today and [TODO.md](TODO.md) for what comes next.
+> **Status:** the comparison runs locally: two schemes on seven rows, each in its own units, with no combined score.
+> The wind corridor is drawn, the storm plays hour by hour, and the gauge is a labelled reading. The shared record
+> around the comparison is not built. See [STATUS.md](STATUS.md) and [TODO.md](TODO.md).
 
 ## The problem it addresses
 
@@ -29,13 +32,18 @@ Three specific failures, not one general complaint:
 
 ## What the sandbox does
 
-- **Toggle projects.** The planned projects for the area, with real footprints, switched on and off in combination.
-- **Swap and compare.** Change the set of projects in the scenario and compare the resulting flood deficit and heat
-  field against the previous run.
-- **Add environmental variables.** Rainfall intensity and duration, surface temperature, sea level, ventilation. The
-  parameter card publishes every assumption a run used, including what the model does not know.
-- **Attribute, don't grade.** Three axes — drainage volume, surface temperature, wind geometry — reported separately.
-  There is deliberately no combined score, and no pass/fail verdict.
+- **Compare schemes.** The planned projects, with real footprints, switched on and off in combination. The axes stay
+  separate: drainage volume, surface heat, tide, greenery, and the wind channel. There is no combined score and no
+  pass/fail verdict.
+- **Add an intervention in a sentence.** "Add a retention pond in the north" becomes a draft on the map. The site comes
+  from the terrain, land cover and flood grid, so the model cannot invent a coordinate. You confirm it before the
+  comparison scores it. A height or density request goes to the massing tool, with the place it applies to stated.
+- **Change the conditions.** Rainfall intensity and duration, surface temperature, sea level. The parameter card
+  publishes every assumption a run used, including what the model does not know.
+- **Watch the storm.** A playhead steps the named `hko_2023_09_07` hyetograph hour by hour, with the mass balance
+  printed beside the frame and the screening label on screen. The gauge can use the recorded storm or a live HKO
+  reading, returned in its own units rather than guessed into an intensity.
+- **One knob at a time.** Rainfall at ±20% re-runs the ledger and reports which assumption moved the deficit.
 
 Screening only. It sits in front of the statutory hydraulic assessment; it does not replace it, and every output is
 labelled as derived rather than certified.
@@ -44,9 +52,9 @@ labelled as derived rather than certified.
 
 | Role | What they do |
 |---|---|
-| District coordinator (public sector) | Holds the register for one development area; sees the cumulative picture across all projects and phases |
-| Developer | Declares their project's massing, drainage and phasing; receives a dated statement of what they inherited versus what they caused |
-| Consultant / QP | Prepares and submits the declaration on the developer's behalf |
+| District coordinator (public sector) | Compares the schemes already on the table, on one set of axes |
+| Developer | Puts their massing, drainage and phasing into that comparison, including by describing an intervention |
+| Consultant / QP | Prepares the scheme and reads the comparison for the developer |
 
 How this is paid for — licensing structure, tier boundaries and the tariff route — is documented in the internal
 planning notes rather than here, because this repository is public.
@@ -57,7 +65,7 @@ planning notes rather than here, because this repository is public.
 - **Overlays:** flood (wet grid) and heat layers you can switch on and off.
 - **Scenario inputs:** rainfall intensity, duration and surface temperature sliders feed each run.
 - **Project catalog:** planned projects with real footprints. Selecting several scores their combined effect. The backend refuses a run that reworks more than 40% of the study area.
-- **Interventions:** describe one in the chat (for example, a park or a retention pond). It shows up as a draft, and you confirm it before it is placed. A details card asks for each value the run uses, and you either enter your own or let the AI estimate it. Estimated values are labelled as such.
+- **Natural-language interventions:** a core feature. Describe one in the chat (for example, a park or a retention pond). It shows up as a draft grounded in the site's own grids, and you confirm it before it is placed. A details card asks for each value the run uses, and you either enter your own or let the AI estimate it. Estimated values are labelled as such.
 - **Grounded chat:** ask about a run and get a structured answer card covering what the run shows, what to do, confidence and caveats. Every number in it is checked against the run's outputs.
 - **Stats and parameter card:** a live summary after each run, plus a reference table of the run's assumptions, including what the model doesn't know.
 - **LLM settings:** set the provider, base URL and model in the app. The API key is never shown back.

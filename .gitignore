@@ -51,6 +51,12 @@ backend/data/heat_cache/
 # this directory, which is exactly why run output lives in its own.
 backend/data/rasters/run/
 
+# The comparison board's own transient output: the shelter-index PNG/sidecar
+# and one storm-playback PNG per hour. Same contract as run output -- a render
+# of one call, rebuilt on demand, never an artefact to diff.
+backend/data/rasters/comparison/
+backend/data/rasters/storm/
+
 # The JSON file store is a RUNTIME store, not source. The seeded fixtures that
 # the app and the tests boot from ARE committed:
 #   backend/data/scenes/51e03c37-...json            the seeded scene

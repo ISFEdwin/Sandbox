@@ -1,10 +1,23 @@
 # STATUS
 
-**As of 14 Nov 2026.** Branch `main`, at `07a4d98` (`docs: the attribution spec, the ADR trail, and two corrected wind claims`), five commits ahead of
-`origin/main` (`bcec6f7`). Working tree: `PLAN.md` untracked; everything else committed.
+**As of 18 Nov 2026.** Branch `main`, at `e196c91` (`docs: record the week's state, and commit the build plan`), seven commits ahead of
+`origin/main` (`bcec6f7`). Working tree: the 18 Nov comparison build (see §9). The measurements in §2.1 were taken at `07a4d98` on 14 Nov;
+the suites were re-run on 18 Nov against the comparison build (265 backend, 115 frontend).
+The header previously named `07a4d98` and an untracked `PLAN.md` — both superseded by `e196c91`. Later findings are collected in §9 rather
+than scattered through the earlier text.
 
-What this file is: the measured state of the project — what runs today, what the chosen business model requires, and
+What this file is: the measured state of the project — what runs today, what the chosen product is, and
 which of those requirements exist. It is not a roadmap (see [TODO.md](TODO.md)) and not a pitch (see the deck).
+
+**Main edges (ground truth, 18 Nov 2026).** The product is a broad-brush comparison tool. These five edges are the ones the demo and the next deck lead with. Deck v2 and the opening of [PLAN.md](PLAN.md) still lead with a coordination register; they are behind this section until revised.
+
+| Edge | What it is | Where it stands |
+|---|---|---|
+| **1. Comparison across separate axes** | Two schemes, read side by side, each axis in its own units: drainage deficit and flood extent, surface heat, tide, greenery and impervious share, wind channel. No combined score and no pass/fail. | **On screen.** `POST /scenes/{id}/compare-schemes` scores A and B against one baseline and storm; `ComparisonPanel` prints A / B / B−A for seven rows and returns `combinedScore: null`. `/scenario/compare` still ranks whole scenarios separately. |
+| **2. A shared picture follows from holding the schemes** | The schemes already on the table sit in one model, so the comparison is also what each project assumed about the others. The dated register is that side effect. It is not the product the demo opens on. | Toggles, swap and compare run today. Declarations, versions, roles and tenancy do not, and they are downstream of the comparison. |
+| **3. Natural-language intervention** | A sentence such as "add a retention pond in the north" becomes a draft on the map. The site is chosen from the terrain, land cover and flood grid; the model cannot invent coordinates. The user confirms before the comparison scores it. A height or density request goes to the massing tool with an explicit scope. | **Built.** Routing is `app/agent/intent.py` (the model can raise a turn to an intervention and cannot lower one). Placement is `app/services/ai_plan.py`. Drafts stay drafts until confirm. |
+| **4. Wind channel as a comparison axis** | The channel is the least-cost corridor under the published prevailing inflow (NE / ENE / E), drawn so a toggled scheme moves it. A diagnostic speed field is the next step only if that line is too thin to read. The inflow is the Planning Department site-wind table, cited. A CFD solve stays out. | **Drawn.** The panel toggles a Cesium-clamped corridor for the scheme; the row reports first-obstruction height per scheme. `POST /ventilation/diagnostic` adds a geometric shelter-index PNG/sidecar (`DIAGNOSTIC_SHELTER_INDEX_NOT_A_SPEED`), not a velocity field. The CSDI inflow file is still not fetched. |
+| **5. Screening, labelled** | Every figure says what was assumed and what is unknown. The engine is arithmetic on the schemes it was given. | The parameter card and the grounded chat do this today. |
 
 ---
 
@@ -12,12 +25,12 @@ which of those requirements exist. It is not a roadmap (see [TODO.md](TODO.md)) 
 
 | | |
 |---|---|
-| **Stage** | Hack4SDG prototype complete; moving to first paid pilot and institutional track |
-| **Product** | Runs locally, end to end: 3D scene → project toggles → run → stats + parameter card → grounded chat |
-| **Model chosen** | **Coordination register** — a district-level record of what each project declared about its neighbours, kept by a public-sector coordinator, licensed to developers |
-| **Biggest gap** | Everything that makes it a *register* rather than a *sandbox*: declarations, versions, roles, attribution code. None of it is built |
-| **Biggest risk** | No written signal that a public body intends to designate it. A voluntary coordination platform has a cold-start problem |
-| **Next milestone** | One real development declared into the sandbox by a real developer, with a real neighbour in the baseline |
+| **Stage** | Hack4SDG prototype complete; the comparison runs; the shared record around it does not |
+| **Product** | A broad-brush comparison: 3D scene, project toggles, a natural-language intervention, then two schemes side by side on seven axes, a wind corridor, a storm playhead and a labelled gauge |
+| **Model chosen** | **Comparison first.** Holding the schemes in one model is what makes the comparison a shared picture. The coordination register is that consequence, not the headline |
+| **Biggest gap** | The comparison is a panel of numbers, not a diff of the two schemes' rasters on the map; the register rows (declarations, versions, roles, tenancy) remain unbuilt |
+| **Biggest risk** | No written signal that a public body intends to designate it, and no paying pilot. A voluntary record has a cold-start problem |
+| **Next milestone** | A real developer's scheme declared into the sandbox next to a real neighbour, then one comparison demoed end to end |
 | **This week** | The engineering base is now clean: the design storm is settled and the committed artefacts agree with the ledger, the whole suite is green on a clean checkout, the attribution *definition* exists as a spec, and the coverage guard has been moved to where it belongs — the consent layer |
 
 ---
@@ -110,9 +123,7 @@ The model needs the sandbox to hold a *record*, not just a *result*. Capability 
 | 15 | Multi-tenant store | **Not built** | `STORE_MODE=file` is the only working mode; `db.py` raises on `postgis` |
 | 16 | Construction phasing / overlapping timelines | **Not built** | Listed as future work in the deck; projects toggle but carry no dates |
 
-**Reading of this table:** rows 1–4 are a good sandbox. Rows 5–15 are the product. The distance between them is the
-whole of the next phase, and it is not a UI problem — it is a data-model problem (versions, signatures, roles, tenancy).
-What this week added is the *definition* of row 8 and the *seam* for rows 5 and 10, not the rows themselves.
+**Reading of this table:** rows 1–4, together with natural-language intervention, are the comparison product. Rows 5–15 are the shared record that appears once several parties compare inside the same model. They stay listed because the record is real work. They are not the headline, and they are not what the demo leads with.
 
 ---
 
@@ -120,7 +131,7 @@ What this week added is the *definition* of row 8 and the *seam* for rows 5 and 
 
 ### 4.1 Decided
 
-**The pathway is the coordination register.** Not three parallel products, not a consultancy tool with extras.
+**The product is the comparison.** The five edges above are the ground truth. The coordination register is what that comparison becomes once the schemes in it belong to more than one party. It is one product, and the record is the consequence of holding the plans.
 
 | Role | Party | Relationship |
 |---|---|---|
@@ -145,7 +156,7 @@ integrity. This is what allows a public body to adopt it — it never owns a hyd
 | B2 | Tariff route: contracted schedule vs pass-through vs voluntary standard | Determines whether revenue is contractual or discretionary | Edwin |
 | B3 | Entity: incorporate now, or run pilots as individuals? | Gates incubatee status, which gates PSTS | Edwin |
 | B4 | Governance: who signs off the Code of Practice and the fee schedule | A vendor-written rulebook will not be adopted | Team |
-| B5 | Attribution definition: what exactly counts as "caused" vs "inherited" | It is the product's central claim | Engineering |
+| B5 | Attribution definition: what exactly counts as "caused" vs "inherited" | It is the claim of the shared record, which follows the comparison. The comparison itself does not wait on it | Engineering |
 
 **B5, as of 14 Nov 2026:** a draft spec now exists — `docs/ATTRIBUTION.md` — defining the three terms, the
 leave-one-out basis for "caused", the interaction term, and the axes that are *not* attributed per project. What B5
@@ -187,6 +198,7 @@ because this repository is public.
 | 2026-11-14 | **Prior work is work the engine scores** | A staged row the engine skips (a `road`: no land-cover effect) claimed 6,482 cells — 37% of the district — as ground already taken, so the proposer had no free ground left to offer. "Claimed" means "the cells the run would rework", which a skipped row does not |
 | 2026-11-14 | **The coverage cap belongs to the consent layer** | A declared project over the cap is applied and flagged for a counter-signature or a joint review; an undeclared one is refused as before. Refusing a declaration would drop exactly what the register exists to hold |
 | 2026-11-14 | **The suggestion card offers one site per axis, never the same site twice** | The flood axis was added after the "at most three" check was written and the cap was never updated; the axes draw on overlapping pools, so the same footprint could be offered twice under two labels |
+| 2026-11-18 | **Comparison is the product; the register is the side effect** | Supersedes the 14 Nov headline. The demo and the next deck lead with scheme-against-scheme on drainage, heat, tide, greenery and the wind channel, plus a natural-language intervention. Deck v2 still titles itself as the coordination register and is behind this decision |
 
 ---
 
@@ -213,3 +225,67 @@ because this repository is public.
 Update this file when a row in §3 changes status, when a §4.2 item is decided, or when the model changes. The
 "verified / inherited / unverified" distinction must survive edits — an unverified claim written as fact here will be
 quoted as fact later.
+
+---
+
+## 9. Update — 18 Nov 2026: competition entry readiness
+
+### 9.1 What moved since 14 Nov 2026
+
+| | |
+|---|---|
+| **Code** | **Landed 18 Nov, uncommitted.** The comparison surface (§9.6): `routers/compare.py`, `services/comparison.py`, `wind_diagnostic.py`, `storm_playback.py`, `weather.py`, the `ComparisonPanel` / `StormPlayback` / `WeatherGauge` components, the wind corridor layer, and 9 new backend tests. 265 backend and 115 frontend tests pass; `tsc` and `vite build` are clean |
+| **Business / deck** | Moved outside this repo: `03_business/Sandbox_Business_Model_v2_2026-11-14.md`, `Sandbox_Coordination_Register_Model_2026-11-14.md`, `Sandbox_Competitive_Landscape_2026-11-14.md`; deck rebuilt as `04_submission/Sandbox_Pitch_v3_2026-11-18.pptx` (15 slides, comparison-first). The v2 deck remains as `Sandbox_Pitch_v2_2026-11-16.pdf` |
+| **Deck honesty** | The new deck states its own limits on slide 4: **4/16 register capabilities built · 0 declarations · 0 paid pilots · 1 study window · file-based store**. It does not claim the register exists |
+| **Competition scouting** | `02_planning/2026-27_competition_pipeline.md` and `2026-27_entry_readiness_todo.md` produced 18 Nov |
+| **Tests** | §2.1's numbers are 14 Nov measurements, **not re-run since**. Re-run before any competition demo (TODO E1) |
+
+### 9.2 Gap against competition entry requirements
+
+| Competition · deadline | Existing asset | Gap that blocks a strong entry | Severity |
+|---|---|---|---|
+| **Cyberport CCMF GBA YEP** · 27 Nov | Individual eligibility is likely met (age / institution) | **No Guangdong or Macau resident teammate identified.** Stage 1 is a 2-hour individual form; Stage 2 needs a cross-region team (≥50% HKID) | ⚠️ Stage 1 can still be entered; Stage 2 cannot |
+| **Cyberport CCMF HK** · 1 Dec | 15-slide comparison-first deck v3; digital-tech project; working demo | No 6-month milestone plan; no HK$100k line-item budget; no explicit 3-month time-to-market; no incorporation decision (individual route is available and unblocks this) | 🔴 Must write in the next 7 days |
+| **Techathon+ 11th** · 11 Jan | Working engine; parameter card; grounded chat; 14 Nov test evidence | **Team on the deck has 5 members** — fine for Techathon+ (2–6), but the same 5 cannot enter Hult or Imagine Cup. Project must also be free of HKSTP funding — do not take Ideation first | 🟡 Form a 4-person subset |
+| **Hult Prize** · 28 Feb | For-profit B2G model; SDG framing available | No 4-minute pitch video, no one-pager, no ≤4 team locked. Hult takes ~10% equity — decide before entering | 🟡 |
+| **Imagine Cup** · 28 Feb | Product runs on Azure-compatible stack | **No company** (must be founded on/after 2 Nov 2024), **no Azure usage on 10 services**, no business verification. 4–6 weeks of lead time | 🔴 Effectively unreachable if not started now |
+| **13th HK University Student Innovation & Entrepreneurship** · ~Mar | Deck-only submission; cross-institution teams allowed | Call not published. Need to choose 创新 vs 创业 track and decide company-registration cut-off category | 🟡 Watch January |
+| **IMC Prosperity / WorldQuant IQC** · ~Mar–Apr | CEng + Finance team profile fits | No team, no BRAIN accounts, no Python harness or practice alphas | ⚪ Optional side track |
+
+### 9.3 Three conflicts to settle before any submission
+
+1. **Team of 5 vs team of 4.** Deck v2 names Bernice Leung, Edwin Fang, Chen Xu, Chloe Chik, Katie Chu. Hult allows 2–4; Imagine Cup allows ≤4 official members; IQC 1–4; Techathon+ 2–6; IMC ≤5. A **4-person subset** satisfies all of them. Do not submit five names to Hult or Imagine Cup.
+2. **TODO A6 is almost certainly misnamed.** It reads "Cyberport CIP application — deadline 1 Dec 2026". Cyberport's published intake table gives the **CCMF Hong Kong Programme** a 1 Dec 2026 deadline for the Feb 2027 intake; the Incubation Programme's Oct 2026 intake closed 3 Aug 2026. ⚠️ Verify on the Cyberport portal, but prepare the **CCMF** application, not CIP.
+3. **The deck sells attribution; the code does not have it.** STATUS §3 row 8 and §7.1 still hold: `docs/ATTRIBUTION.md` is a definition, not an endpoint. Any competition question that asks for a live "inherited vs caused" split must be answered as *designed, not yet built* — slide 4 supports that answer, a live demo does not.
+
+### 9.4 Reusable assets already in hand
+
+- `04_submission/Sandbox_Pitch_v3_2026-11-18.pptx` — 15-slide comparison-first deck; `Sandbox_Pitch_v2_2026-11-16.pdf` is the prior version
+- `04_submission/deck/build_pitch_deck.py` — reproducible deck build; slide/style profiles alongside it
+- `T1/docs/ATTRIBUTION.md` — the central product claim in written form
+- `03_business/Sandbox_Competitive_Landscape_2026-11-14.md` and the three business notes — market and positioning material
+- `04_submission/Team 1 – T1.md`, `workbuddy_usecases.md` — prize report and prompt register
+- The verified test state in §2.1 — usable as evidence, only after a fresh run
+
+### 9.5 The product decision moved the same day
+
+§1 now leads with the comparison. The register gap is unchanged and is no longer the headline: no real declaration has been entered, and attribution exists only as a spec. A1 and A2b remain the work that turns the shared picture into a record. They are not the edges the demo leads with. Those are the five rows at the top of this file.
+
+### 9.6 The comparison surface, built 18 Nov 2026
+
+| Surface | Route / file | What it answers, and what it refuses to claim |
+|---|---|---|
+| Comparison board | `POST /api/scenes/{id}/compare-schemes` · `services/comparison.py` | A vs B on drainage deficit, routed flood extent, heat index, greenery, impervious share, wind obstruction and tide tailwater. `combinedScore` is always `null`; `whyNoCombinedScore` says why |
+| Sensitivity | `POST /api/scenes/{id}/sensitivity` · same service | Rainfall at ±20% through the same ledger. Three readings, one `swingM3`, one sentence naming the assumption that moved. Not an uncertainty analysis |
+| Wind corridor | `/ventilation/corridors` · `view/corridorLayer.ts` | The existing least-cost path, drawn clamped on the map and re-drawn per scheme. Labelled geometry, not a velocity ratio |
+| Shelter diagnostic | `POST /api/scenes/{id}/ventilation/diagnostic` · `wind_diagnostic.py` | Share of the upwind path blocked by massing, as a PNG + sidecar (`DIAGNOSTIC_SHELTER_INDEX_NOT_A_SPEED`). URock / pyqes named as the external check; neither vendored |
+| Storm playhead | `POST /api/scenes/{id}/storm/playback` · `storm_playback.py` | One PNG per hour from the existing `hko_2023_09_07` march. Mass balance `rain_in == stored_gain + drained + standing_end` enforced (`residualM3: 0.0`), screening label kept on screen |
+| Gauge | `GET /api/scenes/{id}/weather/current?mode=recorded\|live` · `weather.py` | Recorded storm (deterministic) or HKO `rhrread` with its own units. Live rainfall since midnight is returned as `usableAsIntensity: false`, never converted into an intensity |
+
+Verified on 18 Nov by running the app against the seeded scene: the panel printed A / B / B−A for all seven rows with B = HSK Park + HSK MTR station, the shelter PNG was fetched and draped, the sensitivity strip returned 4,339 / 7,335 / 10,352 m³, and the playhead fetched frames h02–h07 as it advanced.
+
+Two defects found and fixed in that pass:
+
+1. The playhead wrote the new overlay URL from inside a React `setFrame` updater, which updated `SandboxViewer` while `StormPlayback` rendered. React warned and the map kept frame 0 while the readout advanced. The frame index now moves first; one effect applies the frame from committed state.
+2. Generated overlays landed outside `.gitignore`; `backend/data/rasters/comparison/` and `.../storm/` now sit with `.../run/` as transient render output.
+

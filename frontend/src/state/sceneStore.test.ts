@@ -41,6 +41,7 @@ const reset = () => {
       boundary: true,
       wetGrid: false,
       heatmap: false,
+      wind: false,
       interventions: false,
       props: true,
       realBuildings: true,

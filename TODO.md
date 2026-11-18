@@ -1,5 +1,7 @@
 # TODO — deliverables from here
 
+The product edges live in [STATUS.md](STATUS.md) (18 Nov 2026): comparison across separate axes, the shared picture as a side effect of holding the schemes, natural-language intervention, the wind channel, and labelled screening. This file is the checklist. It is not the definition of the product.
+
 Ordered by when it must be done, not by how interesting it is. `[P0]` = the pathway stalls without it.
 Update as items close; move the reason (not just the tick) into [STATUS.md](STATUS.md) when a capability lands.
 
@@ -52,7 +54,11 @@ The next four weeks decide whether this is a pilot or a slide deck.
       *Done when:* incorporation certificate plus two named FTEs.
       *Why:* gates incubatee status, which gates PSTS. Structural, not commercial.
 
-- [ ] **A6 `[P0]` Cyberport CIP application — deadline 1 Dec 2026.**
+- [ ] **A6 `[P0]` Cyberport application — deadline 1 Dec 2026.** ⚠️ **Corrected 18 Nov:** this is almost certainly the
+      **CCMF Hong Kong Programme** (Feb 2027 intake, deadline 1 Dec 2026, HK$100k no-equity grant), not the Incubation
+      Programme — CIP's Oct 2026 intake closed 3 Aug 2026. Confirm on the Cyberport portal, but prepare CCMF:
+      15-slide deck + 6-month milestone plan + line-item HK$100k budget + 3-month time-to-market + a
+      social-responsibility paragraph. Gap analysis in [STATUS.md](STATUS.md) §9.2.
 
 - [x] **A7 `[P1]` Resolve the working tree.** `contracts/openapi.json` is modified and uncommitted. Either commit with a
       reason or revert. A drifting contract file will bite the register work in B1.
@@ -180,7 +186,44 @@ Two months of engineering that is invisible in a demo and decisive in a pilot.
 
 ---
 
+## F. Competition entry gates — added 18 Nov 2026
+
+These do not replace A–E. They are the *application* layer on top of it: what has to exist in the next few weeks for the
+register thesis to survive a judging panel. Full dates and eligibility in
+`02_planning/2026-27_entry_readiness_todo.md`; measured gaps in [STATUS.md](STATUS.md) §9.
+
+- [ ] **F1 `[P0]` Lock a 4-person entry team by 22 Nov.** Deck v2 names five people. Four is the universal size:
+      Techathon+ 2–6, Hult 2–4, Imagine Cup ≤4, IQC 1–4, IMC ≤5. Five disqualifies Hult and Imagine Cup.
+- [ ] **F2 `[P0]` Write the CCMF milestone plan and HK$100k budget by 24 Nov.** Six months, three disbursement gates
+      (10k / 45k / 45k), credible line items, explicit ≤3-month time-to-market, and a social-responsibility paragraph.
+      This is the part the 15-slide deck does not contain.
+- [ ] **F3 `[P0]` Submit the two Cyberport forms.** GBA YEP Stage 1 by **27 Nov** (individual, cheap, keeps the option
+      open — but Stage 2 needs a Guangdong/Macau teammate); CCMF HK by **1 Dec**. Pick one as primary; two applications
+      for the same idea to one vetting committee reads badly.
+- [ ] **F4 `[P0]` Protect Techathon+ eligibility.** Confirm the project has received no HKSTP funding and won no
+      Gold/Silver/Bronze in the last three editions. Form the team on the portal and pick one AI+ track by 30 Nov;
+      10–20 page deck by **11 Jan**. **Sequencing:** Techathon+ must come before Ideation, never after.
+      C5 is promoted from P2 to P0 by this item.
+- [ ] **F5 `[P0]` Keep the attribution claim honest in every application.** The spec is written; the endpoint is not.
+      A2b is still open. Slide 4 of the comparison-first deck says "4/16 register capabilities" — do not let an
+      application deck quietly upgrade that to a shipped feature.
+- [ ] **F6 `[P1]` Decide Imagine Cup by 1 Dec.** Requires a company founded on/after 2 Nov 2024 and ≥US$1 usage on
+      ≥10 Azure services. Both have 4–6 weeks of lead time. If the decision is no, drop it rather than starting in February.
+- [ ] **F7 `[P1]` Hult Prize by 28 Feb** — 4-minute video, deck, one-pager, SDG framing, and an explicit decision on
+      the ~10% equity the winner gives up.
+- [ ] **F8 `[P2]` Watch `hkchallengeplus.com` from January** for the 13th HK University Student Innovation &
+      Entrepreneurship Competition (~Mar). Cross-institution teams allowed; choose 创新 vs 创业 track early.
+- [ ] **F9 `[P1]` Re-run the suites and clear the runtime store before any competition demo.** §2.1's 256/27/111 are
+      14 Nov numbers (E1); the local store still holds hand-poked residue that distorts the app, though not the suites
+      (E5). A demo is the one place where both matter.
+
+---
+
 ## The one-line version
 
 One real declaration (A1), attribution defined (A2), a company (A5) and a Code of Practice (A4) — by mid-December.
 Everything else is downstream of those four.
+
+**Competition overlay (18 Nov):** a 4-person entry team, the CCMF milestone budget, honest attribution claims, and a
+fresh suite run — before 1 Dec. See §F.
+

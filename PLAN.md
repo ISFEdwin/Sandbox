@@ -1,5 +1,7 @@
 # Register implementation plan
 
+> **Ground truth has moved (18 Nov 2026).** The product is a broad-brush comparison tool. The five edges — comparison across separate axes, a shared picture as the side effect of holding the schemes, natural-language intervention, the wind channel, and labelled screening — are recorded in [STATUS.md](STATUS.md) and are the ones the demo and the next deck lead with. This document is the engineering design for the shared record that follows once several parties compare in the same model. Where this file still opens by calling the register the product, [STATUS.md](STATUS.md) wins.
+
 **Date:** 14 Nov 2026 · **Branch:** `main` @ `bcec6f7` · **Working tree:** `contracts/openapi.json` modified (see §1.5)
 
 > ### ⚠️ State note — this plan was written against `bcec6f7`, and the repo has moved since

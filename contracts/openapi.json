@@ -3267,6 +3267,60 @@
         ]
       }
     },
+    "/api/scenes/{scene_id}/compare-schemes": {
+      "post": {
+        "description": "POST /api/scenes/{sceneId}/compare-schemes\n\nTwo schemes on one set of axes. Request body::\n\n    {\n      \"a\": {\"planIds\": [], \"label\": \"Today\"},\n      \"b\": {\"planIds\": [\"...\"], \"label\": \"HSK Park + MTR\"},\n      \"rainfallMm\": 450, \"temperatureC\": 30, \"tideState\": \"low\"\n    }\n\n``a`` and ``b`` are scored against the same baseline and the same storm.\nThe response's rows keep their own units and ``combinedScore`` is null on\nevery call -- the axis-by-axis read is the product, not a ranking.\n\nThe wind corridor is returned as a GeoJSON LineString per scheme, so the map\ncan draw the same walk the row reports rather than a second computation.",
+        "operationId": "post_compare_schemes_api_scenes__scene_id__compare_schemes_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scene_id",
+            "required": true,
+            "schema": {
+              "title": "Scene Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "title": "Body",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Post Compare Schemes Api Scenes  Scene Id  Compare Schemes Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Post Compare Schemes"
+      }
+    },
     "/api/scenes/{scene_id}/design-metrics": {
       "get": {
         "description": "GET /api/scenes/{sceneId}/design-metrics\n\nWhat the current massing does to shade and ventilation, measured from the\ngeometry, with every metric tied to a rule Hong Kong's own air ventilation\nguidance states.\n\n**This prints no verdict, and that is the design.** The AVA policy document\nbehind Hong Kong's guidance says a higher velocity ratio is the better design\nbut that \"whether the better design option meets a standard cannot be known\".\nA pass/fail here would invent a standard that does not exist. The numbers are\nfor comparing this scheme against another one, which is Stage 3.\n\nEvery metric names its source rule. Nothing here is CFD, a comfort index, or\na daily energy balance, and each caveat says which of those it is not.\n\n``dayOfYear`` is accepted as a spelling of ``day_of_year``, and the day is\nrange-checked -- see the note on the check below.",
@@ -4857,6 +4911,114 @@
         ]
       }
     },
+    "/api/scenes/{scene_id}/sensitivity": {
+      "post": {
+        "description": "POST /api/scenes/{sceneId}/sensitivity\n\nOne assumption moved: rainfall at ±20% (or a caller's ``spread``), holding\ncurve number and storage fixed. Three ledger readings, one sentence on what\nmoved. This is a sensitivity, never an uncertainty analysis.",
+        "operationId": "post_sensitivity_api_scenes__scene_id__sensitivity_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scene_id",
+            "required": true,
+            "schema": {
+              "title": "Scene Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "title": "Body",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Post Sensitivity Api Scenes  Scene Id  Sensitivity Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Post Sensitivity"
+      }
+    },
+    "/api/scenes/{scene_id}/storm/playback": {
+      "post": {
+        "description": "POST /api/scenes/{sceneId}/storm/playback\n\nThe named hourly storm rendered as one PNG per hour, for a playhead on the\nmap. The march is the existing one; this route only renders its frames.\n\n``planIds`` runs the march on the composed scheme's land class, so the\nplayhead responds to the schemes on the table. Per-cell curve-number and\nstorage overrides are not carried into the hourly march -- it is land-class\ndriven -- and the response's ``frameNote`` says so rather than implying the\nstatic ledger and the playback are the same arithmetic.",
+        "operationId": "post_storm_playback_api_scenes__scene_id__storm_playback_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scene_id",
+            "required": true,
+            "schema": {
+              "title": "Scene Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "title": "Body",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Post Storm Playback Api Scenes  Scene Id  Storm Playback Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Post Storm Playback"
+      }
+    },
     "/api/scenes/{scene_id}/suggestions": {
       "get": {
         "description": "GET /api/scenes/{sceneId}/suggestions -- the loop's suggest step.\n\nRanked candidate sites, one axis at a time, with the per-cell arithmetic\nthat produced each estimate. Deterministic by construction: no model, no\nclock, no randomness, so the same query twice returns the same ranking.\n\n``rainfall_mm`` is accepted so a suggestion can be read against the run the\nuser is actually looking at; it changes the estimates and never the\nordering of the pools.",
@@ -5068,6 +5230,131 @@
         "tags": [
           "scenes"
         ]
+      }
+    },
+    "/api/scenes/{scene_id}/ventilation/diagnostic": {
+      "post": {
+        "description": "POST /api/scenes/{sceneId}/ventilation/diagnostic\n\nThe district's geometric shelter index for one prevailing inflow direction,\nplus a PNG to drape. A sidecar to the corridor line, for when one line is too\nthin to read as a channel. Not a speed field, and the response says so.",
+        "operationId": "post_ventilation_diagnostic_api_scenes__scene_id__ventilation_diagnostic_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scene_id",
+            "required": true,
+            "schema": {
+              "title": "Scene Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "title": "Body",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Post Ventilation Diagnostic Api Scenes  Scene Id  Ventilation Diagnostic Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Post Ventilation Diagnostic"
+      }
+    },
+    "/api/scenes/{scene_id}/weather/current": {
+      "get": {
+        "description": "GET /api/scenes/{sceneId}/weather/current?mode=recorded|live\n\nA labelled storm input for the Run button. ``recorded`` is the project's\ncited reference series and is deterministic; ``live`` makes one short attempt\nat HKO's public report and returns the reading with its own units. The live\npayload is an accumulation since midnight, so it is never silently turned\ninto an intensity -- see ``services/weather.py``.",
+        "operationId": "get_weather_current_api_scenes__scene_id__weather_current_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scene_id",
+            "required": true,
+            "schema": {
+              "title": "Scene Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "mode",
+            "required": false,
+            "schema": {
+              "default": "recorded",
+              "pattern": "^(recorded|live)$",
+              "title": "Mode",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "hour",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 23,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Hour"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Weather Current Api Scenes  Scene Id  Weather Current Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Weather Current"
       }
     },
     "/health": {

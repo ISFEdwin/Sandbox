@@ -23,12 +23,15 @@ import Typography from '@mui/material/Typography'
 
 import AppErrorBoundary from './components/AppErrorBoundary'
 import ChatPanel from './components/ChatPanel'
+import ComparisonPanel from './components/ComparisonPanel'
 import InterventionLegend from './components/InterventionLegend'
 import LoadingScreen from './components/LoadingScreen'
 import ProjectCatalog from './components/ProjectCatalog'
 import SceneNotice from './components/SceneNotice'
 import SlidersPanel from './components/SlidersPanel'
 import StatsPanel from './components/StatsPanel'
+import StormPlayback from './components/StormPlayback'
+import WeatherGauge from './components/WeatherGauge'
 import ParameterCardPanel from './components/ParameterCardPanel'
 import InterventionsPanel from './components/InterventionsPanel'
 import ViewButtons from './components/ViewButtons'
@@ -45,6 +48,7 @@ function LayerToggles() {
   const terrain = useSceneStore((s) => s.terrain)
   const hasWet = Boolean(terrain?.wetGridUrl)
   const hasHeat = Boolean(terrain?.heatmapUrl)
+  const hasWind = Boolean(useSceneStore((s) => s.windCorridor ?? s.windDiagnosticUrl))
   return (
     <Stack spacing={0.75} sx={{ alignItems: 'stretch' }}>
       <Button
@@ -64,6 +68,15 @@ function LayerToggles() {
         sx={{ minWidth: 0, px: 1, py: 0.4, fontSize: 10, lineHeight: 1 }}
       >
         Heat
+      </Button>
+      <Button
+        size="small"
+        variant={layers.wind ? 'contained' : 'outlined'}
+        disabled={!hasWind}
+        onClick={() => toggleLayer('wind')}
+        sx={{ minWidth: 0, px: 1, py: 0.4, fontSize: 10, lineHeight: 1 }}
+      >
+        Wind
       </Button>
       <ToggleButtonGroup
         size="small"
@@ -133,7 +146,7 @@ export default function App() {
             scrollbar + panel padding keep canvas drags reachable outside it. */}
         <Box sx={{
           position: 'absolute', top: 12, right: 12, bottom: 16, zIndex: 1200,
-          display: 'flex', flexDirection: 'column', gap: 1.25, width: 300,
+          display: 'flex', flexDirection: 'column', gap: 1.25, width: 330,
           pointerEvents: 'none',
         }}>
           {/* Wet/Heat toggles sit to the LEFT of the scenario inputs, aligned
@@ -151,6 +164,12 @@ export default function App() {
           }}>
             <SlidersPanel />
             <ProjectCatalog />
+            {/* The product: two schemes side by side on separate axes. It sits
+                above the sandbox rows because the comparison is what the run
+                moves, not a report on it. */}
+            <ComparisonPanel />
+            <WeatherGauge />
+            <StormPlayback />
             {/* What the user has placed on the sandbox. The run scores it with
                 the toggled projects; deleting a row unpins it. */}
             <InterventionsPanel />

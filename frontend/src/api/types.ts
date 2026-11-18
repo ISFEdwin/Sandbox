@@ -170,6 +170,15 @@ export interface LayerVisibility {
   wetGrid: boolean
   heatmap: boolean
   /**
+   * The prevailing-wind corridor and its optional shelter diagnostic.
+   *
+   * Geometry, not a velocity field: the polyline is the least-cost through-route
+   * under the published inflow, and the diagnostic is a blockage share. Both
+   * carry their own caveat on the panel, so this switch only decides whether the
+   * geometry is drawn.
+   */
+  wind: boolean
+  /**
    * Discrete features (projects, interventions) render as geometry rather than
    * as a raster overlay, because extrusion and picking only work on entities
    * (ADR-032). Separate switch for that reason, not for presentation.

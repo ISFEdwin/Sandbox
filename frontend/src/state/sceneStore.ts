@@ -77,12 +77,23 @@ export interface SceneState {
    * putting it on the scene record would make a renderer choice look like data.
    */
   viewMode: ViewMode
+  /**
+   * The prevailing-wind corridor currently drawn, and its optional diagnostic.
+   *
+   * Held here rather than in the comparison store because the viewer reads the
+   * scene store; the comparison panel writes it when a board arrives. A corridor
+   * is map state, not a result the panel has to keep alive.
+   */
+  windCorridor: { type: 'LineString'; coordinates: number[][] } | null
+  windDiagnosticUrl: string | null
   load: (sceneId: string) => Promise<void>
   setEnvParams: (patch: Partial<EnvParams>) => void
   run: (planIds: string[] | null) => Promise<void>
   toggleLayer: (layer: keyof LayerVisibility) => void
   setLayers: (layers: Partial<LayerVisibility>) => void
   setViewMode: (mode: ViewMode) => void
+  setWindCorridor: (corridor: { type: 'LineString'; coordinates: number[][] } | null) => void
+  setWindDiagnosticUrl: (url: string | null) => void
   clearError: () => void
   planProjectLoading: boolean
   setPlanProjectLoading: (v: boolean) => void
@@ -95,6 +106,7 @@ export const DEFAULT_LAYERS: LayerVisibility = {
   // features but shows none of them reads as a broken demo.
   wetGrid: false,
   heatmap: false,
+  wind: false,
   interventions: true,
   props: true,
   realBuildings: true,
@@ -109,6 +121,8 @@ export const useSceneStore = create<SceneState>((set, get) => ({
   error: null,
   layers: { ...DEFAULT_LAYERS },
   viewMode: 'tactical',
+  windCorridor: null,
+  windDiagnosticUrl: null,
   runResult: null,
   running: false,
   runError: null,
@@ -138,7 +152,7 @@ export const useSceneStore = create<SceneState>((set, get) => ({
         })
         return
       }
-      set({ scene, terrain, loading: false })
+      set({ scene, terrain, loading: false, windCorridor: null, windDiagnosticUrl: null })
     } catch (error) {
       set({ error: errorMessage(error), loading: false })
     }
@@ -223,6 +237,22 @@ export const useSceneStore = create<SceneState>((set, get) => ({
    */
   setViewMode: (mode) => set({ viewMode: mode }),
 
+  /**
+   * Show the corridor a board returned, and switch the wind layer on.
+   *
+   * Auto-enabling is the demo behaviour, not a preference: a comparison that
+   * returned a corridor and drew nothing would read as a failed call. The layer
+   * switch still turns it off, and an explicit `null` clears the line.
+   */
+  setWindCorridor: (corridor) =>
+    set((state) => ({
+      windCorridor: corridor,
+      layers: corridor
+        ? { ...state.layers, wind: true }
+        : state.layers,
+    })),
+
+  setWindDiagnosticUrl: (url) => set({ windDiagnosticUrl: url }),
 
   clearError: () => set({ error: null }),
 }))
