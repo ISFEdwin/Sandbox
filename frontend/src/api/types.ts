@@ -164,6 +164,14 @@ export type ViewMode = 'survey' | 'tactical'
 /** Screening tidal-backwater state applied to the D8 outfall. */
 export type TideState = 'low' | 'mean' | 'high'
 
+/** Which number the last Run used: the sliders, or a named gauge reading. */
+export interface InputProvenance {
+  kind: 'gauge'
+  mode: 'live' | 'recorded'
+  label: string
+  observedAt: string | null
+}
+
 /** Which overlay layers are switched on, rendered by the viewer's layer pills. */
 export interface LayerVisibility {
   boundary: boolean

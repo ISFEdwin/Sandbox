@@ -3582,6 +3582,61 @@
         ]
       }
     },
+    "/api/scenes/{scene_id}/gauge": {
+      "get": {
+        "description": "GET /api/scenes/{sceneId}/gauge?mode=live|recorded\n\nA labelled rainfall (and, when the feed has it, tide) for the same\ninputs Run already sends. ``live`` reads HKO Open Data. ``recorded``\nis the cited 2023-09-07 peak hour, so a video can be re-run when the\nlive hour is dry. A live failure returns the recorded trace and says so.",
+        "operationId": "get_gauge_api_scenes__scene_id__gauge_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scene_id",
+            "required": true,
+            "schema": {
+              "title": "Scene Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "mode",
+            "required": false,
+            "schema": {
+              "default": "live",
+              "title": "Mode",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Gauge Api Scenes  Scene Id  Gauge Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Gauge",
+        "tags": [
+          "scenes"
+        ]
+      }
+    },
     "/api/scenes/{scene_id}/heat-field": {
       "get": {
         "description": "GET /api/scenes/{sceneId}/heat-field?hours=9,14&day_of_year=196\n\nThe blended heat-exposure field for the current massing: the hand-authored\nland-class index combined with sky view (from the massing geometry) and the\ncast shadow at each requested hour.\n\n**Heat is not a temperature.** The field is a relative 0-1 screening index,\nnever degrees Celsius. It is anchored to a cited air-temperature band (HKO\nLau Fau Shan station, July 2015-2024) that the 0-1 scale is read against; the\nanchor is a committed file, never fetched at request time. The land-class\ntable is mapped through the single definition in ``_overlay_common`` -- not\ncopied.\n\nThe default solar day is 196 (15 July) so the shadow geometry matches the\nJuly anchor band; the design-metrics/shade surface keeps its own 355 default.\n\nSeveral hours are collapsed to a per-cell shaded *fraction* (the mean of the\nbinary masks), so the shadow term reads as \"shaded this fraction of the\nrequested instants\" rather than one instant's snapshot.\n\n``dayOfYear`` is accepted as a spelling of ``day_of_year``: the codebase's\nexisting query parameters are snake_case while the design writes camelCase, and\naccepting both means neither caller is silently served the default.",
@@ -3735,6 +3790,93 @@
           }
         },
         "summary": "Get Ledger",
+        "tags": [
+          "scenes"
+        ]
+      }
+    },
+    "/api/scenes/{scene_id}/ledger/sensitivity": {
+      "get": {
+        "description": "GET /api/scenes/{sceneId}/ledger/sensitivity?rainfallMm=50\n\nUnstored volume at the given rainfall and at ±``factor`` (default 20%),\neach one a ``storage_ledger`` call. No combined score.",
+        "operationId": "get_ledger_sensitivity_api_scenes__scene_id__ledger_sensitivity_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scene_id",
+            "required": true,
+            "schema": {
+              "title": "Scene Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "rainfall_mm",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rainfall Mm"
+            }
+          },
+          {
+            "in": "query",
+            "name": "rainfallMm",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rainfallmm"
+            }
+          },
+          {
+            "in": "query",
+            "name": "factor",
+            "required": false,
+            "schema": {
+              "default": 0.2,
+              "title": "Factor",
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Ledger Sensitivity Api Scenes  Scene Id  Ledger Sensitivity Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Ledger Sensitivity",
         "tags": [
           "scenes"
         ]

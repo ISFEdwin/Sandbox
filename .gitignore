@@ -50,6 +50,8 @@ backend/data/heat_cache/
 # heatmap_hsk.png are the offline pipeline's canonical outputs and are NOT under
 # this directory, which is exactly why run output lives in its own.
 backend/data/rasters/run/
+# Hourly storm frames: rendered on demand from the named hyetograph.
+backend/data/rasters/hourly/
 
 # The JSON file store is a RUNTIME store, not source. The seeded fixtures that
 # the app and the tests boot from ARE committed:

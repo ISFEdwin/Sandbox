@@ -12,6 +12,7 @@ import { errorMessage } from '@/api/client'
 import type {
   EnvParams,
   LayerVisibility,
+  InputProvenance,
   RunResult,
   Scene,
   TerrainMeta,
@@ -72,6 +73,23 @@ export interface SceneState {
   running: boolean
   runError: string | null
   /**
+   * Set when the gauge, not the sliders, supplied the rainfall (and tide)
+   * the next run will send. Cleared the moment those sliders move.
+   */
+  inputProvenance: InputProvenance | null
+  /**
+   * The input line for the stats that are on screen. Written when a run
+   * succeeds, so a later gauge change does not relabel numbers it did not
+   * produce.
+   */
+  runInputLabel: string | null
+  /**
+   * One hour of a named storm, drawn in place of the run's wet grid.
+   * Kept off `terrain` so a frame change does not reload the DEM or move
+   * the camera.
+   */
+  stormFrameUrl: string | null
+  /**
    * How the scene is dressed. Session-local like `layers`, and deliberately not
    * persisted: it is a viewing preference, not a property of the study area, so
    * putting it on the scene record would make a renderer choice look like data.
@@ -83,6 +101,9 @@ export interface SceneState {
   toggleLayer: (layer: keyof LayerVisibility) => void
   setLayers: (layers: Partial<LayerVisibility>) => void
   setViewMode: (mode: ViewMode) => void
+  setInputProvenance: (value: InputProvenance | null) => void
+  /** Point the flood layer at one hour of a named storm. */
+  showStormFrame: (url: string) => void
   clearError: () => void
   planProjectLoading: boolean
   setPlanProjectLoading: (v: boolean) => void
@@ -112,6 +133,9 @@ export const useSceneStore = create<SceneState>((set, get) => ({
   runResult: null,
   running: false,
   runError: null,
+  inputProvenance: null,
+  runInputLabel: null,
+  stormFrameUrl: null,
   planProjectLoading: false,
   setPlanProjectLoading: (v) => set({ planProjectLoading: v }),
 
@@ -180,12 +204,15 @@ export const useSceneStore = create<SceneState>((set, get) => ({
     const { sceneId, scene } = get()
     if (!sceneId) return
     const selected = (planIds ?? []).filter(Boolean)
+    const rainfallMm = Number(
+      scene?.envParams.precipitation ?? DEFAULT_RAINFALL_MMH,
+    ) * Number(scene?.envParams.durationHours ?? DEFAULT_DURATION_HOURS)
+    const provenance = get().inputProvenance
+    const runInputLabel = provenance?.label ?? `typed ${rainfallMm.toFixed(1)} mm`
     set({ running: true, runError: null })
     try {
       const result = await runSimulation(sceneId, {
-        rainfallMm: Number(
-          scene?.envParams.precipitation ?? DEFAULT_RAINFALL_MMH,
-        ) * Number(scene?.envParams.durationHours ?? DEFAULT_DURATION_HOURS),
+        rainfallMm,
         temperatureC: Number(
           scene?.envParams.temperature ?? DEFAULT_TEMPERATURE_C,
         ),
@@ -197,6 +224,8 @@ export const useSceneStore = create<SceneState>((set, get) => ({
       set((state) => ({
         runResult: result,
         running: false,
+        runInputLabel,
+        stormFrameUrl: null,
         terrain: state.terrain
           ? {
               ...state.terrain,
@@ -223,6 +252,13 @@ export const useSceneStore = create<SceneState>((set, get) => ({
    */
   setViewMode: (mode) => set({ viewMode: mode }),
 
+  setInputProvenance: (value) => set({ inputProvenance: value }),
+
+  showStormFrame: (url) =>
+    set((state) => ({
+      stormFrameUrl: url,
+      layers: { ...state.layers, wetGrid: true },
+    })),
 
   clearError: () => set({ error: null }),
 }))

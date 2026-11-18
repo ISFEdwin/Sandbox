@@ -205,6 +205,30 @@ describe('run', () => {
     expect(state.running).toBe(false)
   })
 
+  it('names the gauge on the completed run and drops the storm frame', async () => {
+    useSceneStore.setState({
+      sceneId: 's1',
+      scene,
+      stormFrameUrl: '/static/rasters/hourly/hko_2023_09_07/h04.png?h=4',
+      inputProvenance: {
+        kind: 'gauge',
+        mode: 'recorded',
+        label: 'Recorded trace · Hong Kong Observatory 158.1 mm at 2023-09-07',
+        observedAt: '2023-09-07',
+      },
+      terrain: { terrainUrl: null, imageryUrl: null, bbox: null,
+        wetGridUrl: '/old', heatmapUrl: '/old' },
+    })
+    runSimulation.mockResolvedValue(result)
+    await useSceneStore.getState().run(null)
+    const state = useSceneStore.getState()
+    expect(state.runInputLabel).toBe(
+      'Recorded trace · Hong Kong Observatory 158.1 mm at 2023-09-07',
+    )
+    expect(state.stormFrameUrl).toBeNull()
+    expect(state.terrain?.wetGridUrl).toBe(result.overlays.wetGridUrl)
+  })
+
   it('records a failure instead of leaving the run hanging', async () => {
     useSceneStore.setState({ sceneId: 's1', scene })
     runSimulation.mockRejectedValue(new Error('backend unreachable'))
@@ -219,6 +243,37 @@ describe('run', () => {
     await useSceneStore.getState().run(null)
     expect(runSimulation).not.toHaveBeenCalled()
     expect(useSceneStore.getState().running).toBe(false)
+  })
+})
+
+describe('storm frame', () => {
+  beforeEach(reset)
+
+  it('points the flood layer at one hour and leaves the heatmap alone', () => {
+    useSceneStore.setState({
+      terrain: { terrainUrl: null, imageryUrl: null, bbox: null,
+        wetGridUrl: '/old', heatmapUrl: '/heat' },
+      layers: { ...useSceneStore.getState().layers, wetGrid: false },
+    })
+    useSceneStore.getState().showStormFrame('/static/rasters/hourly/hko_2023_09_07/h04.png?h=4')
+    const state = useSceneStore.getState()
+    expect(state.stormFrameUrl).toBe('/static/rasters/hourly/hko_2023_09_07/h04.png?h=4')
+    expect(state.terrain?.wetGridUrl).toBe('/old')
+    expect(state.terrain?.heatmapUrl).toBe('/heat')
+    expect(state.layers.wetGrid).toBe(true)
+    expect(state.layers.heatmap).toBe(false)
+  })
+
+  it('names a gauge input and can clear it back to typed', () => {
+    useSceneStore.getState().setInputProvenance({
+      kind: 'gauge',
+      mode: 'recorded',
+      label: 'Recorded trace · 158.1 mm at 2023-09-07',
+      observedAt: '2023-09-07',
+    })
+    expect(useSceneStore.getState().inputProvenance?.mode).toBe('recorded')
+    useSceneStore.getState().setInputProvenance(null)
+    expect(useSceneStore.getState().inputProvenance).toBeNull()
   })
 })
 

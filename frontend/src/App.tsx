@@ -28,7 +28,9 @@ import LoadingScreen from './components/LoadingScreen'
 import ProjectCatalog from './components/ProjectCatalog'
 import SceneNotice from './components/SceneNotice'
 import SlidersPanel from './components/SlidersPanel'
+import SensitivityStrip from './components/SensitivityStrip'
 import StatsPanel from './components/StatsPanel'
+import StormPlayback from './components/StormPlayback'
 import ParameterCardPanel from './components/ParameterCardPanel'
 import InterventionsPanel from './components/InterventionsPanel'
 import ViewButtons from './components/ViewButtons'
@@ -43,7 +45,8 @@ function LayerToggles() {
   const toggleLayer = useSceneStore((s) => s.toggleLayer)
   const setLayers = useSceneStore((s) => s.setLayers)
   const terrain = useSceneStore((s) => s.terrain)
-  const hasWet = Boolean(terrain?.wetGridUrl)
+  const stormFrameUrl = useSceneStore((s) => s.stormFrameUrl)
+  const hasWet = Boolean(terrain?.wetGridUrl || stormFrameUrl)
   const hasHeat = Boolean(terrain?.heatmapUrl)
   return (
     <Stack spacing={0.75} sx={{ alignItems: 'stretch' }}>
@@ -155,6 +158,7 @@ export default function App() {
                 the toggled projects; deleting a row unpins it. */}
             <InterventionsPanel />
             <StatsPanel />
+            <SensitivityStrip />
             {/* The brief's section 2 table. Collapsed by default: a reference
                 table, not a status display, and it answers "what should I
                 distrust about this result" rather than "what is happening". */}
@@ -162,7 +166,8 @@ export default function App() {
           </Box>
         </Box>
 
-        {/* Bottom-centre: view buttons */}
+        {/* Bottom-centre: the named storm, then the camera buttons under it. */}
+        <StormPlayback />
         <ViewButtons />
 
         {/* Bottom-left: intervention legend, hidden until a plan has features.
