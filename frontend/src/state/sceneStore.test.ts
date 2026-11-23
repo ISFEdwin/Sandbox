@@ -178,6 +178,11 @@ describe('run', () => {
       tideState: 'low',
       planId: 'plan-1',
       planIds: ['plan-1'],
+      windFrom: 'NE',
+      windSeason: 'annual',
+      windHeightM: 500,
+      windPreset: 'pland',
+      windSpeedMps: null,
     })
   })
 
@@ -193,6 +198,11 @@ describe('run', () => {
       tideState: 'low',
       planId: 'plan-1',
       planIds: ['plan-1', 'plan-2', 'plan-3'],
+      windFrom: 'NE',
+      windSeason: 'annual',
+      windHeightM: 500,
+      windPreset: 'pland',
+      windSpeedMps: null,
     })
   })
 
@@ -206,6 +216,11 @@ describe('run', () => {
       tideState: 'low',
       planId: null,
       planIds: [],
+      windFrom: 'NE',
+      windSeason: 'annual',
+      windHeightM: 500,
+      windPreset: 'pland',
+      windSpeedMps: null,
     })
   })
 

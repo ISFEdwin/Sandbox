@@ -398,3 +398,11 @@ class RunRequest(WireModel):
     tide_state: str = "low"
     plan_id: str | None = None
     plan_ids: list[str] = Field(default_factory=list)
+    # Optional. When set, the heat field faces this bearing and the 10 m speed
+    # moves open cells more than sheltered ones. Omitted, the heat field stays
+    # the land-cover-and-geometry field it was.
+    wind_from: str | None = None
+    wind_season: str | None = None
+    wind_height_m: int | None = None
+    wind_preset: str | None = None
+    wind_speed_mps: float | None = None

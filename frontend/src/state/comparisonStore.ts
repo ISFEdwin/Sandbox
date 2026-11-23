@@ -38,7 +38,16 @@ export interface ComparisonState {
   compare: (
     sceneId: string,
     b: { planIds: string[]; label: string },
-    env: { rainfallMm: number; temperatureC: number; tideState: string },
+    env: {
+      rainfallMm: number
+      temperatureC: number
+      tideState: string
+      windFrom?: string
+      windSeason?: 'annual' | 'summer' | 'winter'
+      windHeightM?: 500 | 300 | 200
+      windPreset?: 'pland' | 'signal3' | 'signal8' | 'signal10' | 'manual'
+      windSpeedMps?: number | null
+    },
   ) => Promise<void>
   runSensitivity: (sceneId: string, planIds: string[], rainfallMm: number) => Promise<void>
   runDiagnostic: (sceneId: string, planIds: string[]) => Promise<void>
@@ -69,6 +78,11 @@ export const useComparisonStore = create<ComparisonState>((set, get) => ({
         rainfallMm: env.rainfallMm,
         temperatureC: env.temperatureC,
         tideState: env.tideState,
+        windFrom: env.windFrom,
+        windSeason: env.windSeason,
+        windHeightM: env.windHeightM,
+        windPreset: env.windPreset,
+        windSpeedMps: env.windSpeedMps,
       })
       set({ result, loading: false })
       // The corridor is map state, so it goes to the scene store the viewer

@@ -148,6 +148,19 @@ ANOMALY_NEUTRAL_HALF_WIDTH_C = 0.4
 ANOMALY_OPAQUE_C = 2.5
 
 
+def _heat_picture(field: dict[str, Any]) -> np.ndarray:
+    """Departure from the temperature the user set, not from the cooled mean.
+
+    Colouring the deviation from the cooled mean would hide the wind: the
+    picture would look the same after every preset and only a number would
+    move. Open cells still sit cooler than sheltered cells, and a faster
+    wind shifts the whole picture down from the slider.
+    """
+    surface = np.asarray(field["surfaceC"], dtype=np.float32)
+    target = float(field.get("scenarioMeanC", field["meanSurfaceC"]))
+    return (surface - np.float32(target)).astype(np.float32)
+
+
 def anomaly_rgba(anomaly_c: np.ndarray) -> np.ndarray:
     """Map a deviation-from-mean temperature field (C) to RGBA, diverging at 0.
 
@@ -396,10 +409,27 @@ def _land_index(grids: Grids, land_class: np.ndarray) -> np.ndarray:
     return lut[land_class].astype(np.float32)
 
 
+def _public_ventilation(
+    report: dict[str, Any] | None,
+    wind: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """The heat allowance, without the per-cell array."""
+    out = dict(report or {"applied": False})
+    if wind:
+        out["direction"] = wind.get("direction")
+        out["preset"] = wind.get("preset")
+        out["label"] = wind.get("label")
+        out["bearingDeg"] = wind.get("bearingDeg")
+        out["sourceUrl"] = wind.get("sourceUrl")
+        out["presetNote"] = wind.get("note")
+    return out
+
+
 def _temperature_fields(grids: Grids, land_class: np.ndarray,
                         terms: dict[str, np.ndarray] | None,
                         lst_base: np.ndarray | None,
                         scenario_mean_c: float | None,
+                        wind: dict[str, Any] | None = None,
                         ) -> dict[str, Any]:
     """The anchored surface-temperature field (C) for one land-class grid.
 
@@ -426,6 +456,8 @@ def _temperature_fields(grids: Grids, land_class: np.ndarray,
         fad=fad,
         lst_base=lst_base,
         scenario_mean_c=scenario_mean_c,
+        wind_speed_mps=None if wind is None else wind.get("speedMps"),
+        reference_speed_mps=None if wind is None else wind.get("referenceSpeedMps"),
     )
 
 
@@ -545,11 +577,53 @@ def _llm_explanation(stats: dict[str, Any], rainfall_mm: float,
 # The run
 # --------------------------------------------------------------------------- #
 
+def _terms_for_wind(
+    terms: dict[str, np.ndarray] | None,
+    grids: Grids,
+    scene_id: str,
+    features: list[dict[str, Any]],
+    wind: dict[str, Any] | None,
+) -> dict[str, np.ndarray] | None:
+    """A copy of the heat terms whose shelter faces the selected wind.
+
+    The cached terms keep the north-east frontal-area raster they were built
+    with. Replacing that array in the cache would make the next bearing read
+    the previous one, so the copy is local to this call.
+    """
+    if terms is None or wind is None or wind.get("bearingDeg") is None:
+        return terms
+    from app.services.design_metrics import (
+        cell_fad,
+        footprint_from_ring,
+        footprints_from_geojson,
+    )
+
+    model = scene_service.buildings_path(scene_id)
+    if not model or not Path(model).exists():
+        return terms
+    footprints = footprints_from_geojson(
+        json.loads(Path(model).read_text(encoding="utf-8")).get("features", []))
+    for override in _massing_overrides(features):
+        ring = override.get("ring") or []
+        height = float(override.get("heightM") or 0.0)
+        if height <= 0 or len(ring) < 3:
+            continue
+        from app.services.ai_plan import _point_in_ring
+        footprints = [f for f in footprints if not _point_in_ring(f.lon, f.lat, ring)]
+        block = footprint_from_ring(ring, height)
+        if block is not None:
+            footprints.append(block)
+    copied = dict(terms)
+    copied["fad"] = cell_fad(footprints, grids, float(wind["bearingDeg"]))
+    return copied
+
+
 def run_scenario(scene_id: str, rainfall_mm: float, temperature_c: float,
                  plan_id: str | None,
                  features: list[dict[str, Any]],
                  plan_ids: list[str] | None = None,
-                 tide_state: str = DEFAULT_TIDE_STATE) -> dict[str, Any]:
+                 tide_state: str = DEFAULT_TIDE_STATE,
+                 wind: dict[str, Any] | None = None) -> dict[str, Any]:
     """One live run: scenario grid -> overlays on disk -> stats + explanation.
 
     ``features`` are the ledger-ready intervention dicts for the chosen plans
@@ -657,14 +731,17 @@ def run_scenario(scene_id: str, rainfall_mm: float, temperature_c: float,
     # would subtract the same geometry. That is the whole point of scoring a
     # project, so the two are computed separately.
     overrides = _massing_overrides(features)
-    terms = _heat_terms(grids, scene_id)
-    scen_terms = _heat_terms(grids, scene_id, overrides) if overrides else terms
+    terms = _terms_for_wind(_heat_terms(grids, scene_id), grids, scene_id, [], wind)
+    scen_terms = _terms_for_wind(
+        _heat_terms(grids, scene_id, overrides) if overrides else _heat_terms(grids, scene_id),
+        grids, scene_id, features, wind)
     lst_base, lst_meta = load_observed_lst(grids.elevation_5m.shape[0],
                                            grids.elevation_5m.shape[1])
     scenario_mean_c = float(temperature_c)
-    scen_temp = _temperature_fields(grids, trial, scen_terms, lst_base, scenario_mean_c)
-    base_temp = _temperature_fields(grids, grids.land_class, terms, lst_base,
-                                    scenario_mean_c)
+    scen_temp = _temperature_fields(
+        grids, trial, scen_terms, lst_base, scenario_mean_c, wind)
+    base_temp = _temperature_fields(
+        grids, grids.land_class, terms, lst_base, scenario_mean_c, wind)
 
     # ---- stats ---------------------------------------------------------------
     scen_ledger = _scenario_ledger(grids, trial, cn_over, rainfall_mm,
@@ -696,6 +773,7 @@ def run_scenario(scene_id: str, rainfall_mm: float, temperature_c: float,
             # and wind effect is visible.
             "local": local_heat_effect(
                 scen_temp["anomalyC"], base_temp["anomalyC"], cell_area),
+            "ventilation": _public_ventilation(scen_temp.get("ventilation"), wind),
         },
         "baseline": {
             **base_ledger,
@@ -836,7 +914,7 @@ def run_scenario(scene_id: str, rainfall_mm: float, temperature_c: float,
     if footprint is not None:
         flow_render = np.where(footprint, 0.0, flow_render)
     Image.fromarray(flow_rgba(flow_render), mode="RGBA").save(wet_png)
-    Image.fromarray(anomaly_rgba(scen_temp["anomalyC"]), mode="RGBA").save(heat_png)
+    Image.fromarray(anomaly_rgba(_heat_picture(scen_temp)), mode="RGBA").save(heat_png)
 
     generated = datetime.now(timezone.utc).isoformat(timespec="seconds")
     tide_active = tailwater_m > 0.0
@@ -966,6 +1044,12 @@ def run_scenario(scene_id: str, rainfall_mm: float, temperature_c: float,
             "tideState": tide_state,
             "planId": plan_id,
             "planIds": plan_ids or ([plan_id] if plan_id else []),
+            "wind": None if wind is None else {
+                "direction": wind.get("direction"),
+                "preset": wind.get("preset"),
+                "speedMps": wind.get("speedMps"),
+                "referenceSpeedMps": wind.get("referenceSpeedMps"),
+            },
         },
         "overlays": {
             "wetGridUrl": f"{wet_url}?v={run_id}",
@@ -989,6 +1073,49 @@ def run_scenario(scene_id: str, rainfall_mm: float, temperature_c: float,
         "explanationCard": explanation_card.model_dump(),
         "status": RUN_STATUS,
         "warning": RUN_WARNING + (TIDE_WARNING % tailwater_m if tide_active else ""),
+    }
+
+
+def wind_heat_overlay(
+    scene_id: str,
+    temperature_c: float,
+    features: list[dict[str, Any]],
+    wind: dict[str, Any],
+) -> dict[str, Any]:
+    """Re-render the heat picture for the selected wind, without a drainage run.
+
+    Massing and land cover still decide which cells are open. The selected
+    10 m speed then cools the open cells more than the sheltered ones. The
+    wet-grid overlay is left as the last drainage run drew it.
+    """
+    scene_service.get_scene(scene_id)
+    grids = _grids()
+    trial, _, _, applied, skipped = apply_interventions(grids, features)
+    terms = _terms_for_wind(_heat_terms(grids, scene_id), grids, scene_id, features, wind)
+    lst_base, lst_meta = load_observed_lst(
+        grids.elevation_5m.shape[0], grids.elevation_5m.shape[1])
+    field = _temperature_fields(
+        grids, trial, terms, lst_base, float(temperature_c), wind)
+    run_id = uuid.uuid4().hex[:8]
+    run_dir = settings.rasters_dir / "run"
+    run_dir.mkdir(parents=True, exist_ok=True)
+    heat_png = run_dir / f"heatmap_{run_id}.png"
+    Image.fromarray(anomaly_rgba(_heat_picture(field)), mode="RGBA").save(heat_png)
+    ventilation = _public_ventilation(field.get("ventilation"), wind)
+    heat_url = settings.public_url(f"rasters/run/heatmap_{run_id}.png")
+    return {
+        "sceneId": scene_id,
+        "heatmapUrl": f"{heat_url}?v={run_id}",
+        "surfaceMeanC": field["meanSurfaceC"],
+        "surfaceMaxC": field["maxSurfaceC"],
+        "airMeanC": round(field["meanSurfaceC"] - field["surfaceToAirOffsetC"], 3),
+        "scenarioMeanC": field["scenarioMeanC"],
+        "ventilation": ventilation,
+        "lstAvailable": bool(lst_meta.get("available")),
+        "interventionsApplied": applied,
+        "interventionsSkipped": skipped,
+        "status": "WIND_HEAT_SCREENING_ALLOWANCE",
+        "warning": ventilation.get("note"),
     }
 
 

@@ -37,6 +37,28 @@ DEFAULT_TEMPERATURE_C = 30.0
 DEFAULT_TIDE_STATE = "low"
 
 
+def _optional_wind(body: dict[str, Any]) -> dict[str, Any] | None:
+    """The selected 10 m wind, or None when the caller did not send one."""
+    from app.services.wind_presets import resolve_wind
+
+    keys = ("windFrom", "wind_from", "windPreset", "wind_preset",
+            "windSpeedMps", "wind_speed_mps")
+    if not any(key in body for key in keys):
+        return None
+    resolved = resolve_wind(
+        direction=body.get("windFrom", body.get("wind_from")),
+        season=body.get("windSeason", body.get("wind_season")),
+        height_m=body.get("windHeightM", body.get("wind_height_m")),
+        preset=body.get("windPreset", body.get("wind_preset")),
+        speed_mps=body.get("windSpeedMps", body.get("wind_speed_mps")),
+    )
+    if resolved is None:
+        return None
+    if not resolved.get("ok"):
+        raise HTTPException(status_code=422, detail=resolved.get("reason"))
+    return resolved
+
+
 def _rainfall(body: dict[str, Any]) -> float:
     value = body.get("rainfallMm", body.get("rainfall_mm", DEFAULT_RAINFALL_MM))
     try:
@@ -121,6 +143,7 @@ def post_compare_schemes(scene_id: str, body: dict) -> dict:
                             detail="temperatureC must be a number") from None
 
     sides = [_side(body, "a", "Scheme A"), _side(body, "b", "Scheme B")]
+    wind = _optional_wind(body)
     return compare_schemes(
         scene_id,
         grids,
@@ -129,6 +152,7 @@ def post_compare_schemes(scene_id: str, body: dict) -> dict:
         rainfall_mm=rainfall_mm,
         temperature_c=temperature_c,
         tide_state=tide_state,
+        wind=wind,
     )
 
 

@@ -132,6 +132,11 @@ Two months of engineering that is invisible in a demo and decisive in a pilot.
       and ranks for the four window cells, the centroid 10 m inlet, the solved
       streamline count, and the A/B first-obstruction and path length in metres.
       Draw E sets the compass to east. The axis is still partial.
+      24 Nov 2026: the compass can set a 10 m speed, including the HKO Signal 3,
+      8 and 10 onsets. Display traces fill the coarse channel. The heat field
+      cools open cells more than sheltered cells at that speed, and the board
+      has a surface-mean row in °C. The allowance is capped at 3 °C. SVR and
+      LVR stay null. The corridor cost is still geometry.
 
 - [ ] **B12 `[P2]` Paid or local model id for the LLM path.** Rate limits in a paying session are a churn event.
 
