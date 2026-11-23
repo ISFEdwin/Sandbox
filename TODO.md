@@ -280,7 +280,7 @@ These do not replace A–F. They make the "labelled screening" edge legible to a
 - [x] **G2 `[P0]` Add broad-brush triage to declaration intake.** Given site area, zone, road class, reclamation / STP / drainage inputs and receiver distances, return a `governmentFit` object: `schedule3`, `schedule2[]`, `planningPermission`, `eaMayBeRequired`, `assumptions[]`, `furtherInformation[]`, `notADetermination: true`.
       *Done when:* tests cover a >50 ha flag, a 30%-of-district declaration that is **not** 50 ha, a road-class-only flag, and assertions that the obsolete 20 ha / 100,000 population / P.2 / 20-10-5 m residential rules do not fire.
       *Why:* this is the "fitting government criteria" claim. Without the unknowns list it is an overclaim, and E2 becomes a lie.
-      **Met (23 Nov 2026).** `POST /api/declarations/intake` and `tests/test_government_fit.py`. The same read is the Criteria fit panel beside the parameter card (`frontend/src/components/GovernmentFitPanel.tsx`). A blank field is not sent. The read is not a statutory determination.
+      **Met (23 Nov 2026).** `POST /api/declarations/intake` and `tests/test_government_fit.py`. The same read is the Criteria fit panel (`frontend/src/components/GovernmentFitPanel.tsx`), with the comparison and above the storm. The closed state is four rows — air ventilation, sustainable building design, drainage, and the EIA Ordinance — each naming who set the rule, what this sandbox screens, and one limit. Cap. 499 facts sit behind Show. A blank is not sent. Assumptions, the annex and the unknowns stay closed until asked. The read is a broad-brush fit read, not a statutory determination.
 
 - [x] **G3 `[P0]` Put the thresholds in reference data, not prose.** `backend/data/reference/hk_screening_thresholds.json`, each entry with value, unit, source URL, effective date and superseded-by field.
       *Done when:* G2 reads from the file, D6 can point at it, and a drift test fails if a superseded value reappears.
@@ -289,6 +289,7 @@ These do not replace A–F. They make the "labelled screening" edge legible to a
 - [ ] **G4 `[P1]` HKPSG buffer advisory layer.** Table 1.3 residential road and rail buffers plus the NEF 25 rule, shown as "check against HKPSG", never as compliance.
       *Done when:* a missing receiver distance produces `furtherInformation`, not a silent pass.
       *23 Nov:* the fit read and the Criteria fit panel already print that check, and a missing distance is `furtherInformation`. G4 stays open because there is no map layer.
+      *24 Nov:* the EIA row carries one line, "HKPSG noise, check only". Still no map layer.
 
 - [x] **G5 `[P1]` Close the liability loop in A4 and E2.** Code of Practice states what a fit assertion is and is not; every output keeps the label plus the unknowns list.
       *Done when:* removing either the label or the unknowns list fails a test.
@@ -317,8 +318,11 @@ Everything else is downstream of those four.
 **Competition overlay (18 Nov):** a 4-person entry team, the CCMF milestone budget, honest attribution claims, and a
 fresh suite run — before 1 Dec. See §F.
 
-**Government-criteria overlay (23 Nov):** G1–G3 and G5–G6 are met. The Criteria fit panel sits beside the parameter
-card and reads `POST /api/declarations/intake`. The read is not a statutory determination. The comparison also names
-the projects held at data collection and compares the wind channel under the study-window inflow. SVR and LVR stay
-empty. G4 (no map layer), G7, G8 and G9 are still open. G8 still comes before any site-specific HSK–HT claim. See §G.
+**Government-criteria overlay (24 Nov):** G1–G3 and G5–G6 are met. The Criteria fit panel sits with the comparison,
+above the storm. Its closed state is four rows (air ventilation, sustainable building design, drainage, EIA). Cap. 499
+facts sit behind Show; a blank is not sent. Assumptions, the annex and the unknowns stay closed until asked. The read
+is a broad-brush fit read, not a statutory determination. It does not report an AVA, an SBDG concession, a Drainage
+Impact Assessment, or a cumulative-impact finding. The comparison also names the projects held at data collection and
+compares the wind channel under the study-window inflow. SVR and LVR stay empty. G4 (no map layer), G7, G8 and G9 are
+still open. G8 still comes before any site-specific HSK–HT claim. See §G.
 

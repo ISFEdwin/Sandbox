@@ -27,9 +27,10 @@ shared picture of what each project assumed about the others. The dated register
 is the product.
 
 > **Status:** the comparison runs locally: two schemes on seven rows, each in its own units, with no combined score.
-> The wind corridor is drawn, the storm plays hour by hour, and the gauge is a labelled reading. Criteria fit, beside
-> the parameter card, reads typed facts against the published gates. That read is not a statutory determination. The
-> shared record around the comparison is not built. See [STATUS.md](STATUS.md) and [TODO.md](TODO.md).
+> The wind corridor is drawn, the storm plays hour by hour, and the gauge is a labelled reading. Criteria fit sits
+> with the comparison: four rows for air ventilation, sustainable building design, drainage and the EIA Ordinance.
+> That read is a broad-brush fit read, not a statutory determination. The shared record around the comparison is not
+> built. See [STATUS.md](STATUS.md) and [TODO.md](TODO.md).
 
 ## The problem it addresses
 
@@ -87,7 +88,7 @@ planning notes rather than here, because this repository is public.
 - **Natural-language interventions:** a core feature. Describe one in the chat (for example, a park or a retention pond). It shows up as a draft grounded in the site's own grids, and you confirm it before it is placed. A details card asks for each value the run uses, and you either enter your own or let the AI estimate it. Estimated values are labelled as such.
 - **Grounded chat:** ask about a run and get a structured answer card covering what the run shows, what to do, confidence and caveats. Every number in it is checked against the run's outputs.
 - **Stats and parameter card:** a live summary after each run, plus a reference table of the run's assumptions, including what the model doesn't know.
-- **Criteria fit:** type the facts you have (site area, share of the district, road class, and the drainage, planning and noise facts behind one disclosure). Blank fields are not sent. The panel returns which published gates those facts appear to touch, with the unknowns listed. It is a broad-brush fit read, not an environmental permit and not a section 16 decision.
+- **Criteria fit:** four rows with the comparison — air ventilation (Technical Circular 1/06), sustainable building design (PNAP APP-152), drainage (Drainage Services Department), and the EIA Ordinance (Cap. 499). Each row names who set the rule, what this sandbox screens, and one limit. Wind paths come from the comparison when it has been run; site and local velocity ratios are not held. Greenery, when the comparison has it, stays in its own units; separation and setback are not checked. Runoff and flood storage are the ledger, not an installed sewage capacity and not a Drainage Impact Assessment. Cap. 499 facts sit behind Show. A blank is not sent. Read fit returns Schedule 2 and Schedule 3 flags from those facts. Neighbours on the map are not a cumulative-impact finding. It is a broad-brush fit read, not an environmental permit and not a section 16 decision.
 - **LLM settings:** set the provider, base URL and model in the app. The API key is never shown back.
 
 ## User flow
@@ -98,7 +99,7 @@ planning notes rather than here, because this repository is public.
 4. Set the sliders and press **Run**.
 5. Read the stats panel, then ask the chat why the numbers changed or what to try next.
 6. Adjust or delete interventions in the Interventions panel and run again to compare.
-7. Open **Criteria fit**, type only the facts you hold, and press **Read fit**. The card says which gates those facts appear to touch, and what is still unknown.
+7. Read **Criteria fit** with the comparison. The four rows are the aim of the sandbox. Open **Show** only to type Cap. 499 facts you hold, then press **Read fit**. Unknowns stay closed until you ask.
 
 ## Where GenAI is used
 

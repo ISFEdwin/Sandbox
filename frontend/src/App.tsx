@@ -174,20 +174,20 @@ export default function App() {
                 above the sandbox rows because the comparison is what the run
                 moves, not a report on it. */}
             <ComparisonPanel />
+            {/* Four rules the comparison is aiming at. The rows are the closed
+                state. Cap. 499 facts stay behind Show. The parameter card
+                stays collapsed beneath this panel, above the storm. */}
+            <GovernmentFitPanel />
+            {/* The brief's section 2 table. Collapsed by default: a reference
+                table, not a status display, and it answers "what should I
+                distrust about this result" rather than "what is happening". */}
+            <ParameterCardPanel />
             <WeatherGauge />
             <StormPlayback />
             {/* What the user has placed on the sandbox. The run scores it with
                 the toggled projects; deleting a row unpins it. */}
             <InterventionsPanel />
             <StatsPanel />
-            {/* Declared facts against the published gates. Collapsed, and it
-                sits with the parameter card: one says what a run assumed, the
-                other says which gates those facts appear to touch. */}
-            <GovernmentFitPanel />
-            {/* The brief's section 2 table. Collapsed by default: a reference
-                table, not a status display, and it answers "what should I
-                distrust about this result" rather than "what is happening". */}
-            <ParameterCardPanel />
           </Box>
         </Box>
 

@@ -1,11 +1,11 @@
 /**
- * Criteria fit, beside the parameter card.
+ * Criteria fit, with the comparison.
  *
- * A short fact list, then a flag summary. Blank fields are not sent. The
- * result stays a broad-brush fit read: the screening label and the unknowns
- * list travel with it.
+ * The closed state is four rows: the rules this sandbox is aiming at, who set
+ * each one, what this screen actually reads, and one limit. Cap. 499 facts sit
+ * behind Show. A blank is not sent. The read stays a broad-brush fit read.
  */
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
@@ -16,6 +16,7 @@ import Typography from '@mui/material/Typography'
 
 import HudPanel from '@/components/HudPanel'
 import { ApiError, errorMessage } from '@/api/client'
+import type { ComparisonResult, ComparisonWind } from '@/api/comparisonApi'
 import {
   emptyFitDraft,
   fitIsLabelled,
@@ -25,6 +26,9 @@ import {
   type IntakeResult,
   type Tri,
 } from '@/api/governmentFit'
+import { fetchParameterCard } from '@/api/sandboxApi'
+import { useComparisonStore } from '@/state/comparisonStore'
+import { useSceneStore } from '@/state/sceneStore'
 
 const CONTROL_SX = {
   width: '100%',
@@ -61,9 +65,28 @@ const SCHEDULE3_COLOUR = {
   insufficient_facts: '#3fe0ff',
 } as const
 
-function headline(fit: GovernmentFit): string {
-  const schedule2 = fit.schedule2.length > 0 ? fit.schedule2.map((flag) => flag.item).join(' ') : 'no Sch 2'
-  return `Sch 3 ${SCHEDULE3_LABEL[fit.schedule3.flag].toLowerCase()} · ${schedule2}`
+function m3(value: number): string {
+  return `${Math.round(value).toLocaleString()} m³`
+}
+
+/**
+ * Directions the comparison actually walked. Frontal-area ratios sit on the
+ * same wind object; they are not velocity ratios, and this row does not read them.
+ */
+function windPaths(wind: ComparisonWind | undefined): string[] {
+  if (!wind?.directions) return []
+  return Object.entries(wind.directions)
+    .filter(([, direction]) => {
+      if (!direction) return false
+      return direction.pathLengthM != null || direction.entryEdge != null || direction.blocked != null
+    })
+    .map(([name]) => name)
+}
+
+function greeneryHeld(result: ComparisonResult | null): string | null {
+  const axis = result?.axes.find((row) => row.key === 'greenery')
+  if (!axis || axis.b === null || axis.b === undefined) return null
+  return `${axis.b.toFixed(2)} ha`
 }
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
@@ -165,31 +188,62 @@ function TriField({
   )
 }
 
-function FlagRow({
-  label,
-  value,
-  colour,
-  detail,
+function FitLine({ label, value, colour }: { label: string; value: string; colour?: string }) {
+  return (
+    <Stack direction="row" spacing={1} justifyContent="space-between" alignItems="baseline" sx={{ minWidth: 0 }}>
+      <Typography sx={{ fontSize: 12, lineHeight: 1.35, minWidth: 0 }}>{label}</Typography>
+      <Typography
+        className="hud-mono"
+        sx={{ fontSize: 12, fontWeight: 600, color: colour ?? 'text.primary', textAlign: 'right', overflowWrap: 'anywhere' }}
+      >
+        {value}
+      </Typography>
+    </Stack>
+  )
+}
+
+function RuleRow({
+  rule,
+  setBy,
+  screens,
+  figure,
+  limit,
+  children,
 }: {
-  label: string
-  value: string
-  colour: string
-  detail?: string
+  rule: string
+  setBy: string
+  screens: string
+  figure: ReactNode
+  limit: string
+  children?: ReactNode
 }) {
   return (
     <Box sx={{ py: 0.65, borderBottom: '1px solid rgba(120, 150, 135, 0.14)', minWidth: 0 }}>
-      <Stack direction="row" spacing={1} justifyContent="space-between" alignItems="baseline" sx={{ minWidth: 0 }}>
-        <Typography sx={{ fontSize: 12, flex: '1 1 auto', minWidth: 0 }}>{label}</Typography>
-        <Typography className="hud-mono" sx={{ fontSize: 12, fontWeight: 600, color: colour, flex: '0 0 auto' }}>
-          {value}
-        </Typography>
-      </Stack>
-      {detail && (
-        <Typography sx={{ fontSize: 11.5, lineHeight: 1.45, color: 'text.secondary', mt: 0.25, overflowWrap: 'anywhere' }}>
-          {detail}
-        </Typography>
-      )}
+      <Typography sx={{ fontSize: 12.5, fontWeight: 600, lineHeight: 1.25 }}>{rule}</Typography>
+      <Typography
+        className="hud-mono"
+        sx={{ fontSize: 10, lineHeight: 1.35, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#3fe0ff', mt: 0.15 }}
+      >
+        {setBy}
+      </Typography>
+      <Typography sx={{ fontSize: 12, lineHeight: 1.35, mt: 0.3 }}>{screens}</Typography>
+      <Box sx={{ mt: 0.25, minWidth: 0 }}>{figure}</Box>
+      <Typography sx={{ fontSize: 11.5, lineHeight: 1.4, color: 'text.secondary', mt: 0.25, overflowWrap: 'anywhere' }}>
+        {limit}
+      </Typography>
+      {children}
     </Box>
+  )
+}
+
+function Figure({ held, children }: { held: boolean; children: ReactNode }) {
+  return (
+    <Typography
+      className="hud-mono"
+      sx={{ fontSize: 12, lineHeight: 1.4, color: held ? 'text.primary' : '#3fe0ff', overflowWrap: 'anywhere' }}
+    >
+      {children}
+    </Typography>
   )
 }
 
@@ -206,105 +260,74 @@ function planningLabel(route: string | null): string {
   return 'Column not supplied'
 }
 
-function FitReadout({ fit }: { fit: GovernmentFit }) {
-  const schedule2 = fit.schedule2.length > 0 ? fit.schedule2.map((flag) => flag.item).join(', ') : 'None'
+function EiaRead({ fit }: { fit: GovernmentFit }) {
+  const schedule2 = fit.schedule2.length > 0 ? fit.schedule2.map((flag) => flag.item).join(', ') : 'none'
   const plan = fit.asAt.hskHtPlan
   return (
     <Box sx={{ minWidth: 0 }}>
-      <Typography sx={{ fontSize: 12.5, lineHeight: 1.4, color: '#ff9d2e', fontWeight: 600 }}>
-        Not a determination
+      <FitLine
+        label="Schedule 3"
+        value={SCHEDULE3_LABEL[fit.schedule3.flag]}
+        colour={SCHEDULE3_COLOUR[fit.schedule3.flag]}
+      />
+      <FitLine
+        label="Schedule 2"
+        value={schedule2}
+        colour={fit.schedule2.length > 0 ? '#ff9d2e' : '#5cff9d'}
+      />
+      <FitLine label="Town planning" value={planningLabel(fit.planningPermission.route)} colour="#7d928a" />
+      <FitLine
+        label="Section 4(4)"
+        value={section44Label(fit.section44.flag)}
+        colour={fit.section44.flag === 'possible_specification' ? '#ff9d2e' : '#7d928a'}
+      />
+      {plan ? <FitLine label="Plan" value={plan} colour="#dce8e2" /> : null}
+      <FitLine label="HKPSG noise" value="check only" colour="#3fe0ff" />
+      <Typography
+        className="hud-mono"
+        sx={{ fontSize: 10.5, lineHeight: 1.4, color: '#ff9d2e', mt: 0.35, overflowWrap: 'anywhere' }}
+      >
+        {fit.screeningLabel.split('_').join('_\u200b')}
       </Typography>
-      <Typography sx={{ fontSize: 11.5, lineHeight: 1.45, color: 'text.secondary', overflowWrap: 'anywhere' }}>
-        A fit read of the facts below. It is not an environmental permit and not a section 16 decision.
-        {plan ? ` Plan ${plan}.` : ''}
-      </Typography>
-
-      <Box sx={{ mt: 0.75 }}>
-        <FlagRow
-          label="Schedule 3"
-          value={SCHEDULE3_LABEL[fit.schedule3.flag]}
-          colour={SCHEDULE3_COLOUR[fit.schedule3.flag]}
-          detail={fit.schedule3.reason}
-        />
-        <FlagRow
-          label="Schedule 2"
-          value={schedule2}
-          colour={fit.schedule2.length > 0 ? '#ff9d2e' : '#5cff9d'}
-          detail={
-            fit.schedule2.length > 0
-              ? fit.schedule2.map((flag) => flag.reason).join(' ')
-              : 'No Schedule 2 item was flagged from the facts that were typed.'
-          }
-        />
-        <FlagRow
-          label="Town planning"
-          value={planningLabel(fit.planningPermission.route)}
-          colour="text.secondary"
-          detail={fit.planningPermission.note}
-        />
-        <FlagRow
-          label="Environmental assessment"
-          value={fit.eaMayBeRequired === true ? 'May be required' : fit.eaMayBeRequired === false ? 'Not indicated' : 'Not stated'}
-          colour={fit.eaMayBeRequired ? '#ff9d2e' : '#7d928a'}
-        />
-        <FlagRow
-          label="Section 4(4)"
-          value={section44Label(fit.section44.flag)}
-          colour={fit.section44.flag === 'possible_specification' ? '#ff9d2e' : '#7d928a'}
-          detail={fit.section44.note}
-        />
-        <FlagRow
-          label="HKPSG noise"
-          value="Check only"
-          colour="#3fe0ff"
-          detail={fit.hkpsg.note}
-        />
-      </Box>
-
-      <Typography className="hud-label" sx={{ mt: 1.25, mb: 0.5 }}>
-        Still unknown · {fit.furtherInformation.length}
-      </Typography>
-      <Box sx={{ maxHeight: 168, overflow: 'auto', pr: 0.5, minWidth: 0 }}>
-        {fit.furtherInformation.map((line, index) => (
-          <Typography
-            key={`${index}-${line.slice(0, 24)}`}
-            sx={{
-              fontSize: 11.5,
-              lineHeight: 1.45,
-              color: 'text.secondary',
-              py: 0.4,
-              borderTop: index === 0 ? 'none' : '1px solid rgba(120, 150, 135, 0.1)',
-              overflowWrap: 'anywhere',
-            }}
-          >
-            {line}
-          </Typography>
-        ))}
-      </Box>
     </Box>
   )
 }
 
 export default function GovernmentFitPanel() {
-  const [open, setOpen] = useState(false)
+  const sceneId = useSceneStore((s) => s.sceneId)
+  const comparison = useComparisonStore((s) => s.result)
+  const [factsOpen, setFactsOpen] = useState(false)
   const [more, setMore] = useState(false)
   const [assumptionsOpen, setAssumptionsOpen] = useState(false)
   const [annexOpen, setAnnexOpen] = useState(false)
+  const [unknownsOpen, setUnknownsOpen] = useState(false)
   const [draft, setDraft] = useState<FitDraft>(emptyFitDraft)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<IntakeResult | null>(null)
   const [copied, setCopied] = useState(false)
-  const resultRef = useRef<HTMLDivElement>(null)
+  const [soilHeld, setSoilHeld] = useState<boolean | null>(null)
 
   const set = <K extends keyof FitDraft>(key: K, value: FitDraft[K]) => {
     setDraft((current) => ({ ...current, [key]: value }))
   }
 
   useEffect(() => {
-    if (!result) return
-    resultRef.current?.scrollIntoView({ block: 'nearest' })
-  }, [result])
+    if (!sceneId) return
+    let live = true
+    void fetchParameterCard(sceneId)
+      .then((card) => {
+        if (!live) return
+        const soil = card.entries.find((entry) => entry.key === 'soilGroup')
+        setSoilHeld(soil?.value != null)
+      })
+      .catch(() => {
+        if (live) setSoilHeld(false)
+      })
+    return () => {
+      live = false
+    }
+  }, [sceneId])
 
   const read = async () => {
     setError(null)
@@ -317,6 +340,9 @@ export default function GovernmentFitPanel() {
         setError('The read arrived without its screening label or its unknowns list.')
         return
       }
+      setUnknownsOpen(false)
+      setAssumptionsOpen(false)
+      setAnnexOpen(false)
       setResult(next)
     } catch (err) {
       setResult(null)
@@ -338,35 +364,92 @@ export default function GovernmentFitPanel() {
   }
 
   const labelled = result !== null && fitIsLabelled(result.governmentFit)
+  const fit = labelled && result ? result.governmentFit : null
+  const paths = windPaths(comparison?.schemes.b.wind)
+  const greenery = greeneryHeld(comparison)
+  const metrics = comparison?.schemes.b.metrics
+  const soilNote = soilHeld === false ? ' Soil group is not held.' : ''
 
   return (
     <HudPanel
       title="Criteria fit"
-      right={
-        labelled ? (
-          <Typography className="hud-mono" sx={{ fontSize: 9, color: '#ff9d2e', textAlign: 'right' }}>
-            {headline(result.governmentFit)}
-          </Typography>
-        ) : undefined
-      }
-      sx={{ width: '100%', maxWidth: '100%', minWidth: 0, overflow: 'hidden' }}
+      sx={{ width: '100%', maxWidth: '100%', minWidth: 0, flexShrink: 0, alignSelf: 'stretch' }}
     >
-      <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-        <Typography sx={{ fontSize: 12, color: 'text.secondary', lineHeight: 1.4, minWidth: 0 }}>
-          Gates these facts appear to touch. A blank stays blank.
-        </Typography>
-        <Button
-          size="small"
-          variant={open ? 'outlined' : 'contained'}
-          onClick={() => setOpen((value) => !value)}
-          sx={{ fontSize: 10, py: 0.25, minWidth: 0, flex: '0 0 auto' }}
-        >
-          {open ? 'Hide' : 'Show'}
-        </Button>
-      </Stack>
+      <Typography sx={{ fontSize: 12, lineHeight: 1.4, color: '#ff9d2e', fontWeight: 600, mb: 0.75 }}>
+        Broad-brush fit read, not a statutory determination.
+      </Typography>
 
-      {open && (
-        <Stack spacing={0.85} sx={{ mt: 1.25, minWidth: 0 }}>
+      <RuleRow
+        rule="Air ventilation assessment"
+        setBy="Technical Circular 1/06"
+        screens="Wind paths, comparing layout options"
+        figure={
+          <Figure held={paths.length > 0}>
+            {paths.length > 0 ? `Paths compared: ${paths.join(', ')}.` : 'Wind paths are not held.'}
+          </Figure>
+        }
+        limit="Site and local velocity ratios are not held, and frontal area and the coarse channel are not a velocity ratio."
+      />
+
+      <RuleRow
+        rule="Sustainable building design"
+        setBy="Buildings Department, PNAP APP-152"
+        screens="Building separation, setback, site greenery"
+        figure={
+          <Figure held={greenery !== null}>
+            {greenery !== null
+              ? `Site greenery, scheme B, ${greenery}, in its own units.`
+              : 'Site greenery is not held.'}
+          </Figure>
+        }
+        limit="Separation and setback are not checked, and this row is not a concession test."
+      />
+
+      <RuleRow
+        rule="Drainage impact assessment"
+        setBy="Drainage Services Department"
+        screens="Runoff and flood storage"
+        figure={
+          <Figure held={metrics != null}>
+            {metrics
+              ? `Runoff ${m3(metrics.runoffM3)}. Flood storage ${m3(metrics.storageCapacityM3)}. Unstored runoff ${m3(metrics.drainageDeficitM3)}, scheme B.${soilNote}`
+              : `Runoff and flood storage are not held.${soilNote}`}
+          </Figure>
+        }
+        limit="This volume is not an installed sewage capacity and not a Drainage Impact Assessment."
+      />
+
+      <RuleRow
+        rule="Environmental impact assessment"
+        setBy="EPD, EIA Ordinance (Cap. 499)"
+        screens="Cumulative effects with neighbouring projects"
+        figure={
+          fit ? (
+            <EiaRead fit={fit} />
+          ) : (
+            <Figure held={false}>No Cap. 499 facts read yet.</Figure>
+          )
+        }
+        limit="Neighbours on the map are not a cumulative-impact finding under the Technical Memorandum."
+      >
+        <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between" sx={{ mt: 0.7, minWidth: 0 }}>
+          <Typography sx={{ fontSize: 11.5, lineHeight: 1.35, color: 'text.secondary', minWidth: 0 }}>
+            Cap. 499 facts. A blank stays blank.
+          </Typography>
+          <Button
+            size="small"
+            variant={factsOpen ? 'outlined' : 'contained'}
+            aria-expanded={factsOpen}
+            onClick={() => setFactsOpen((value) => !value)}
+            sx={{ fontSize: 10, py: 0.25, minWidth: 0, flex: '0 0 auto' }}
+          >
+            {factsOpen ? 'Hide' : 'Show'}
+          </Button>
+        </Stack>
+      </RuleRow>
+
+      {factsOpen && (
+        <Stack spacing={0.85} sx={{ mt: 1, minWidth: 0 }}>
           <NumberField label="Site area, ha" value={draft.siteAreaHa} onChange={(value) => set('siteAreaHa', value)} />
           <NumberField
             label="Share of district, %"
@@ -517,67 +600,92 @@ export default function GovernmentFitPanel() {
               {error}
             </Alert>
           )}
+        </Stack>
+      )}
 
-          {labelled && result && (
-            <Box
-              ref={resultRef}
-              sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '8px', p: 1, minWidth: 0 }}
+      {labelled && result && (
+        <Box sx={{ mt: 0.85, minWidth: 0 }}>
+          <Stack direction="row" spacing={0.5} useFlexGap sx={{ flexWrap: 'wrap' }}>
+            <Button
+              size="small"
+              variant="outlined"
+              aria-expanded={unknownsOpen}
+              onClick={() => setUnknownsOpen((value) => !value)}
+              sx={{ fontSize: 10 }}
             >
-              <FitReadout fit={result.governmentFit} />
-              <Stack direction="row" spacing={0.5} sx={{ mt: 1, flexWrap: 'wrap' }}>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  onClick={() => setAssumptionsOpen((value) => !value)}
-                  sx={{ fontSize: 10 }}
-                >
-                  {assumptionsOpen ? 'Hide assumptions' : 'Assumptions'}
-                </Button>
-                <Button size="small" variant="outlined" onClick={() => setAnnexOpen((value) => !value)} sx={{ fontSize: 10 }}>
-                  {annexOpen ? 'Hide annex' : 'Annex'}
-                </Button>
-                <Button size="small" variant="outlined" onClick={() => void copyAnnex()} sx={{ fontSize: 10 }}>
-                  {copied ? 'Copied' : 'Copy annex'}
-                </Button>
-              </Stack>
-              {assumptionsOpen && (
-                <Box sx={{ mt: 0.75 }}>
-                  {result.governmentFit.assumptions.map((line, index) => (
-                    <Typography
-                      key={`${index}-${line.slice(0, 24)}`}
-                      sx={{ fontSize: 11.5, lineHeight: 1.45, color: 'text.secondary', py: 0.3, overflowWrap: 'anywhere' }}
-                    >
-                      {line}
-                    </Typography>
-                  ))}
-                </Box>
-              )}
-              {annexOpen && (
-                <Box
-                  component="pre"
-                  className="hud-mono"
+              {unknownsOpen ? 'Hide unknowns' : 'Unknowns'}
+            </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              aria-expanded={assumptionsOpen}
+              onClick={() => setAssumptionsOpen((value) => !value)}
+              sx={{ fontSize: 10 }}
+            >
+              {assumptionsOpen ? 'Hide assumptions' : 'Assumptions'}
+            </Button>
+            <Button size="small" variant="outlined" aria-expanded={annexOpen} onClick={() => setAnnexOpen((value) => !value)} sx={{ fontSize: 10 }}>
+              {annexOpen ? 'Hide annex' : 'Annex'}
+            </Button>
+            <Button size="small" variant="outlined" onClick={() => void copyAnnex()} sx={{ fontSize: 10 }}>
+              {copied ? 'Copied' : 'Copy annex'}
+            </Button>
+          </Stack>
+          {unknownsOpen && (
+            <Box sx={{ maxHeight: 168, overflow: 'auto', mt: 0.75, pr: 0.5, minWidth: 0 }}>
+              {result.governmentFit.furtherInformation.map((line, index) => (
+                <Typography
+                  key={`${index}-${line.slice(0, 24)}`}
                   sx={{
-                    m: 0,
-                    mt: 0.75,
-                    p: 1,
-                    whiteSpace: 'pre-wrap',
-                    overflowWrap: 'anywhere',
-                    fontSize: 10,
+                    fontSize: 11.5,
                     lineHeight: 1.45,
                     color: 'text.secondary',
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    borderRadius: '8px',
-                    maxHeight: 200,
-                    overflow: 'auto',
+                    py: 0.4,
+                    borderTop: index === 0 ? 'none' : '1px solid rgba(120, 150, 135, 0.1)',
+                    overflowWrap: 'anywhere',
                   }}
                 >
-                  {result.screeningBasisAnnex}
-                </Box>
-              )}
+                  {line}
+                </Typography>
+              ))}
             </Box>
           )}
-        </Stack>
+          {assumptionsOpen && (
+            <Box sx={{ mt: 0.75 }}>
+              {result.governmentFit.assumptions.map((line, index) => (
+                <Typography
+                  key={`${index}-${line.slice(0, 24)}`}
+                  sx={{ fontSize: 11.5, lineHeight: 1.45, color: 'text.secondary', py: 0.3, overflowWrap: 'anywhere' }}
+                >
+                  {line}
+                </Typography>
+              ))}
+            </Box>
+          )}
+          {annexOpen && (
+            <Box
+              component="pre"
+              className="hud-mono"
+              sx={{
+                m: 0,
+                mt: 0.75,
+                p: 1,
+                whiteSpace: 'pre-wrap',
+                overflowWrap: 'anywhere',
+                fontSize: 10,
+                lineHeight: 1.45,
+                color: 'text.secondary',
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: '8px',
+                maxHeight: 200,
+                overflow: 'auto',
+              }}
+            >
+              {result.screeningBasisAnnex}
+            </Box>
+          )}
+        </Box>
       )}
     </HudPanel>
   )
