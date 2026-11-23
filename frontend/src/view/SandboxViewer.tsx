@@ -579,6 +579,14 @@ export default function SandboxViewer({ className }: SandboxViewerProps = {}) {
   // that solve has been written to disk. The geometric corridor is the
   // fallback, and it stays the drawing in the textured 3D mode, because that
   // mesh was not the obstacle field the solve used.
+  //
+  // Compare replaces the corridor object on every board refresh. While the
+  // 2.5D threads are up, that replacement is the same solved file, so the
+  // key stays put and a preset only recolors. Rebuilding here removed the
+  // threads and the next frame often never painted them.
+  const corridorKey = showMassing25d
+    ? 'openfoam'
+    : `${windCorridor?.coordinates?.length ?? 0}:${windCorridor?.coordinates?.[0]?.[0] ?? ''}`
   useEffect(() => {
     const viewer = viewerRef.current
     if (!isLive(viewer)) return
@@ -592,8 +600,9 @@ export default function SandboxViewer({ className }: SandboxViewerProps = {}) {
 
     let cancelled = false
     const drawGeometric = () => {
-      if (cancelled || !isLive(viewerRef.current) || !windCorridor) return
-      corridorRef.current = addCorridor(viewerRef.current, windCorridor)
+      const corridor = useSceneStore.getState().windCorridor
+      if (cancelled || !isLive(viewerRef.current) || !corridor) return
+      corridorRef.current = addCorridor(viewerRef.current, corridor)
     }
 
     if (!showMassing25d) {
@@ -624,7 +633,8 @@ export default function SandboxViewer({ className }: SandboxViewerProps = {}) {
         corridorRef.current = addOpenfoamStreamlines(
           viewerRef.current,
           collection,
-          windSpeedScale,
+          useSceneStore.getState().windSpeedScale,
+          windFrom,
         )
       } catch {
         drawGeometric()
@@ -636,7 +646,13 @@ export default function SandboxViewer({ className }: SandboxViewerProps = {}) {
       corridorRef.current?.dispose()
       corridorRef.current = null
     }
-  }, [windCorridor, layers.wind, showMassing25d, windFrom, windSpeedScale])
+  }, [corridorKey, layers.wind, showMassing25d, windFrom])
+
+  // A preset or a table change only recolors. Rebuilding the threads here
+  // drops them, and with requestRenderMode the replacement often never paints.
+  useEffect(() => {
+    corridorRef.current?.recolor?.(windSpeedScale)
+  }, [windSpeedScale])
 
   // ---- the view mode -----------------------------------------------------
   //

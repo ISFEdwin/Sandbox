@@ -301,6 +301,41 @@ def _row(
     }
 
 
+def _surface_with_wind(
+    grids: Grids,
+    footprints: list[Any],
+    features: list[dict[str, Any]],
+    temperature_c: float,
+    wind: dict[str, Any],
+) -> dict[str, Any]:
+    """The site-mean surface after the screening ventilation allowance.
+
+    The allowance uses this scheme's frontal-area raster for the selected
+    bearing, so a scheme that blocks the channel cools less than one that
+    leaves it open. The temperature slider is the mean at the PlanD inlet.
+    """
+    from app.services.design_metrics import cell_fad, footprint_from_ring
+    from app.services.run_service import _massing_overrides
+    from app.services.temperature_field import ventilation_report
+
+    scheme = list(footprints)
+    for override in _massing_overrides(features):
+        ring = override.get("ring") or []
+        height = float(override.get("heightM") or 0.0)
+        if height <= 0 or len(ring) < 3:
+            continue
+        from app.services.ai_plan import _point_in_ring
+        scheme = [item for item in scheme if not _point_in_ring(item.lon, item.lat, ring)]
+        block = footprint_from_ring(ring, height)
+        if block is not None:
+            scheme.append(block)
+    fad = cell_fad(scheme, grids, float(wind["bearingDeg"]))
+    report = ventilation_report(fad, wind.get("speedMps"), wind.get("referenceSpeedMps"))
+    report.pop("coolingC", None)
+    report["surfaceMeanC"] = round(float(temperature_c) - float(report["meanCoolingC"]), 3)
+    return report
+
+
 def compare_schemes(
     scene_id: str,
     grids: Grids,
@@ -310,6 +345,7 @@ def compare_schemes(
     rainfall_mm: float,
     temperature_c: float,
     tide_state: str,
+    wind: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Score two schemes on the same axes and return the board.
 
@@ -354,6 +390,29 @@ def compare_schemes(
              direction=LOWER_IS_BETTER,
              note=("The site-mean surface temperature is pinned to the slider, "
                    "so this land-cover index is what moves with a scheme.")),
+    ]
+    if wind is not None:
+        a_surface = _surface_with_wind(
+            grids, footprints, sides[0].get("features") or [], temperature_c, wind)
+        b_surface = _surface_with_wind(
+            grids, footprints, sides[1].get("features") or [], temperature_c, wind)
+        a["windVentilation"] = a_surface
+        b["windVentilation"] = b_surface
+        axes.append(
+            _row("windHeat", "Surface mean at this wind", "°C",
+                 a_surface["surfaceMeanC"], b_surface["surfaceMeanC"],
+                 direction=LOWER_IS_BETTER,
+                 note=(
+                     f"{wind.get('label')} at {wind.get('speedMps')} m/s from "
+                     f"{wind.get('direction')}, against the PlanD inlet "
+                     f"{wind.get('referenceSpeedMps')} m/s. Open cells change by "
+                     f"{-a_surface['openCellCoolingC']} C and sheltered cells by "
+                     f"{-a_surface['shelteredCellCoolingC']} C (negative is cooler), "
+                     f"capped at {a_surface['capC']} C. A screening allowance. The "
+                     "land-cover index above does not include it."
+                 )),
+        )
+    axes.extend([
         _row("greenery", "Green + water area", "ha",
              a["greenWaterHa"], b["greenWaterHa"],
              direction=HIGHER_IS_BETTER,
@@ -374,7 +433,7 @@ def compare_schemes(
              comparable=False,
              note=TIDE_STATES[tide_state]["label"] + ". " +
                   TIDE_STATES[tide_state]["source"]),
-    ]
+    ])
 
     from app.services.data_collection import collect, wind_channel_comparison
 
@@ -440,7 +499,11 @@ def compare_schemes(
             "not a velocity ratio, and SVR and LVR are not computed.",
             "Data collection names the existing envelopes and the planned "
             "catalog. It does not assess cumulative impact.",
-        ],
+        ] + ([
+            "The surface-at-this-wind row is a screening allowance on top of "
+            "the slider mean. Open cells cool more than sheltered cells. It "
+            "is not a velocity ratio and not a microclimate solve.",
+        ] if wind is not None else []),
     }
 
 

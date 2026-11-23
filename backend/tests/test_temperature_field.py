@@ -111,6 +111,29 @@ def main() -> int:
     check("and carries the screening status",
           r_synth["status"].startswith("SCREENING"))
 
+    # ---- 6. the wind allowance moves the mean, and shelter keeps heat --------
+    same = temperature_field(
+        land_index=land, svf=svf, shaded=shaded, fad=fad,
+        lst_base=base, scenario_mean_c=47.0,
+        wind_speed_mps=2.3, reference_speed_mps=2.3)
+    check("the PlanD reference speed leaves the pinned mean",
+          abs(same["meanSurfaceC"] - 47.0) < 0.01, str(same["meanSurfaceC"]))
+    faster = temperature_field(
+        land_index=np.full(shape, 0.5, np.float32),
+        svf=np.ones(shape, np.float32),
+        shaded=np.zeros(shape, np.float32),
+        fad=fad_band,
+        lst_base=None, scenario_mean_c=47.0,
+        wind_speed_mps=4.6, reference_speed_mps=2.3)
+    check("a doubled 10 m wind cools the site mean",
+          faster["meanSurfaceC"] < 47.0, str(faster["meanSurfaceC"]))
+    open_cell = float(faster["surfaceC"][0, 0])
+    sheltered_cell = float(faster["surfaceC"][0, 60])
+    check("an open cell cools more than a sheltered cell",
+          open_cell < sheltered_cell, f"{open_cell:.2f} vs {sheltered_cell:.2f}")
+    check("the allowance names itself as a screening shift",
+          "not a velocity ratio" in faster["ventilation"]["note"])
+
     print("=== temperature_field: all passed ===")
     return 0
 

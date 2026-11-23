@@ -8,11 +8,20 @@
  */
 import { useEffect, useState } from 'react'
 import Box from '@mui/material/Box'
+import Slider from '@mui/material/Slider'
 import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Typography from '@mui/material/Typography'
 
+import { usePlanStore } from '@/state/planStore'
+import { useSandboxStore } from '@/state/sandboxStore'
 import { useSceneStore } from '@/state/sceneStore'
+
+const SIGNAL_MPS = {
+  signal3: 41 / 3.6,
+  signal8: 63 / 3.6,
+  signal10: 118 / 3.6,
+} as const
 
 const ORDER = [
   'N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE',
@@ -39,6 +48,11 @@ interface WindIndex {
   tables: Record<string, Record<string, { fileUrl?: string; directions: Record<string, WindCell> }>>
 }
 
+function windShift(deltaC: number): string {
+  if (Math.abs(deltaC) < 0.05) return 'about the same'
+  return `${Math.abs(deltaC).toFixed(1)} °C ${deltaC < 0 ? 'cooler' : 'warmer'}`
+}
+
 function polar(deg: number, radius: number, cx: number, cy: number) {
   const rad = (deg * Math.PI) / 180
   return { x: cx + radius * Math.sin(rad), y: cy - radius * Math.cos(rad) }
@@ -52,6 +66,18 @@ export default function WindCompass({ offsetLeft }: { offsetLeft: number }) {
   const setWindFrom = useSceneStore((s) => s.setWindFrom)
   const setWindTable = useSceneStore((s) => s.setWindTable)
   const setWindSpeedScale = useSceneStore((s) => s.setWindSpeedScale)
+  const preset = useSceneStore((s) => s.windPreset)
+  const manualSpeed = useSceneStore((s) => s.windSpeedMps)
+  const setWindPreset = useSceneStore((s) => s.setWindPreset)
+  const setWindSpeedMps = useSceneStore((s) => s.setWindSpeedMps)
+  const refreshWindHeat = useSceneStore((s) => s.refreshWindHeat)
+  const sceneId = useSceneStore((s) => s.sceneId)
+  const heatLoading = useSceneStore((s) => s.windHeatLoading)
+  const windHeat = useSceneStore((s) => s.windHeat)
+  const temperature = useSceneStore((s) => s.scene?.envParams.temperature)
+  const planKey = usePlanStore((s) => s.selectedPlanIds.join(','))
+  const stagedPlanId = useSandboxStore((s) => s.stagedPlanId)
+  const placedCount = useSandboxStore((s) => s.features.length)
   const [index, setIndex] = useState<WindIndex | null>(null)
   const [missing, setMissing] = useState(false)
 
@@ -74,11 +100,25 @@ export default function WindCompass({ offsetLeft }: { offsetLeft: number }) {
   const solved = index?.tables?.annual?.['500']?.directions?.[windFrom]
   const selected = table?.directions?.[windFrom]
 
+  const presetSpeed = preset === 'manual'
+    ? manualSpeed
+    : preset === 'pland'
+      ? selected?.inletSpeedMps ?? null
+      : SIGNAL_MPS[preset]
+  const shownSpeed = presetSpeed ?? selected?.inletSpeedMps ?? null
+
   useEffect(() => {
-    const target = selected?.inletSpeedMps
     const reference = solved?.inletSpeedMps
-    if (target && reference) setWindSpeedScale(target / reference)
-  }, [selected?.inletSpeedMps, solved?.inletSpeedMps, setWindSpeedScale])
+    if (shownSpeed && reference) setWindSpeedScale(shownSpeed / reference)
+  }, [shownSpeed, solved?.inletSpeedMps, setWindSpeedScale])
+
+  useEffect(() => {
+    if (!windOn || !sceneId) return
+    const timer = window.setTimeout(() => {
+      void refreshWindHeat()
+    }, 450)
+    return () => window.clearTimeout(timer)
+  }, [windOn, sceneId, windFrom, season, heightM, preset, manualSpeed, temperature, planKey, stagedPlanId, placedCount, refreshWindHeat])
 
   if (!windOn) return null
 
@@ -215,9 +255,63 @@ export default function WindCompass({ offsetLeft }: { offsetLeft: number }) {
       </ToggleButtonGroup>
 
       <Typography className="hud-mono" sx={{ fontSize: 11, mt: 0.75 }}>
-        {selected?.inletSpeedMps == null
+        {shownSpeed == null
           ? 'No derived speed in this table'
-          : `${selected.inletSpeedMps.toFixed(3)} m/s at 10 m`}
+          : `${shownSpeed.toFixed(2)} m/s at 10 m`}
+      </Typography>
+      <Slider
+        size="small"
+        min={0.5}
+        max={40}
+        step={0.1}
+        value={shownSpeed ?? 2}
+        aria-label="Wind speed at 10 m"
+        onChange={(_, value) => {
+          if (typeof value === 'number') setWindSpeedMps(value)
+        }}
+        sx={{ mt: 0.5, color: '#ffb020', py: 0.5 }}
+      />
+      <ToggleButtonGroup
+        exclusive
+        size="small"
+        fullWidth
+        value={preset === 'manual' ? null : preset}
+        onChange={(_, next: 'pland' | 'signal3' | 'signal8' | 'signal10' | null) => {
+          if (next) setWindPreset(next)
+        }}
+        aria-label="Wind speed preset"
+        sx={{ mt: 0.25, '& .MuiToggleButton-root': { fontSize: 9, py: 0.25, px: 0.4, textTransform: 'none' } }}
+      >
+        <ToggleButton value="pland">PlanD</ToggleButton>
+        <ToggleButton value="signal3">Signal 3</ToggleButton>
+        <ToggleButton value="signal8">Signal 8</ToggleButton>
+        <ToggleButton value="signal10">Signal 10</ToggleButton>
+      </ToggleButtonGroup>
+      <Typography variant="caption" color="text.secondary" sx={{ fontSize: 8.5, display: 'block', mt: 0.35 }}>
+        {preset === 'signal3' && 'HKO Signal 3 onset, sustained 41 km/h. '}
+        {preset === 'signal8' && 'HKO Signal 8 onset, sustained 63 km/h. '}
+        {preset === 'signal10' && 'HKO Signal 10 onset, sustained 118 km/h. '}
+        {preset === 'manual' && 'Manual 10 m speed. '}
+        Colour follows the solved fast and slow threads. A faster preset pushes that band hotter. Display traces fill the channel. Not a new solve.
+        {heatLoading ? ' Reading the heat field…' : ''}
+      </Typography>
+      {windHeat?.ventilation?.applied && (
+        <Typography className="hud-mono" sx={{ fontSize: 10, display: 'block', mt: 0.25 }}>
+          Surface {windHeat.surfaceMeanC.toFixed(1)} °C
+          {' · open '}
+          {windShift(-windHeat.ventilation.openCellCoolingC)}
+          {' · sheltered '}
+          {windShift(-windHeat.ventilation.shelteredCellCoolingC)}
+        </Typography>
+      )}
+      <Box sx={{ display: 'flex', gap: 0.4, mt: 0.35 }}>
+        {['#7ec8ff', '#ffe7a8', '#ffb020', '#e23b2f'].map((colour) => (
+          <Box key={colour} sx={{ flex: 1, height: 4, bgcolor: colour }} />
+        ))}
+      </Box>
+      <Typography variant="caption" color="text.secondary" sx={{ fontSize: 8, display: 'flex', justifyContent: 'space-between' }}>
+        <span>slower</span>
+        <span>faster</span>
       </Typography>
       <Typography variant="caption" color="text.secondary" sx={{ fontSize: 9, display: 'block' }}>
         {selected?.frequency == null

@@ -18,6 +18,12 @@ function m3(value: number): string {
   return Math.round(value).toLocaleString('en-US')
 }
 
+function windShift(coolingC: number): string {
+  const delta = -coolingC
+  if (Math.abs(delta) < 0.05) return 'about the same'
+  return `${Math.abs(delta).toFixed(1)} °C ${delta < 0 ? 'cooler' : 'warmer'}`
+}
+
 function Stat({ label, value, accent }: { label: string; value: string; accent?: string }) {
   return (
     <Box>
@@ -37,14 +43,27 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
 export default function StatsPanel() {
   const runResult = useSceneStore((s) => s.runResult)
   const running = useSceneStore((s) => s.running)
+  const windHeat = useSceneStore((s) => s.windHeat)
 
   if (!runResult && !running) {
+    const ventilation = windHeat?.ventilation
     return (
       <HudPanel title="Stats" sx={{ width: '100%' }}>
         <Typography variant="caption" color="text.secondary">
           Press <strong style={{ color: '#5cff9d' }}>Run</strong> to compute the
           buffer deficit, wet area and heat index at the chosen rainfall.
         </Typography>
+        {ventilation?.applied && (
+          <>
+            <Typography className="hud-mono" sx={{ fontSize: 12, mt: 0.75 }}>
+              Surface {(windHeat?.surfaceMeanC ?? 0).toFixed(1)} °C at {(ventilation.windSpeedMps ?? 0).toFixed(1)} m/s
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: 9, display: 'block' }}>
+              Open {windShift(ventilation.openCellCoolingC)} · sheltered {windShift(ventilation.shelteredCellCoolingC)}.
+              The wind allowance on the heat field. Drainage still waits for Run.
+            </Typography>
+          </>
+        )}
       </HudPanel>
     )
   }
@@ -133,9 +152,19 @@ export default function StatsPanel() {
       <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.5 }}>
         <Typography className="hud-label" sx={{ fontSize: 8.5 }}>Surface temp (mean)</Typography>
         <Typography className="hud-mono" sx={{ fontSize: 11.5 }}>
-          {stats.scenario.surfaceMeanC.toFixed(1)} °C
+          {(windHeat?.surfaceMeanC ?? stats.scenario.surfaceMeanC).toFixed(1)} °C
         </Typography>
       </Stack>
+      {windHeat?.ventilation?.applied && (
+        <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.5 }}>
+          <Typography className="hud-label" sx={{ fontSize: 8.5 }}>
+            Wind on heat
+          </Typography>
+          <Typography className="hud-mono" sx={{ fontSize: 11.5 }}>
+            open {windShift(windHeat.ventilation.openCellCoolingC)} · sheltered {windShift(windHeat.ventilation.shelteredCellCoolingC)}
+          </Typography>
+        </Stack>
+      )}
       <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.5 }}>
         <Typography className="hud-label" sx={{ fontSize: 8.5 }}>Air temp (est.)</Typography>
         <Typography className="hud-mono" sx={{ fontSize: 11.5 }}>

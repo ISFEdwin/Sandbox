@@ -2368,6 +2368,61 @@
             "default": "low",
             "title": "Tidestate",
             "type": "string"
+          },
+          "windFrom": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Windfrom"
+          },
+          "windHeightM": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Windheightm"
+          },
+          "windPreset": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Windpreset"
+          },
+          "windSeason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Windseason"
+          },
+          "windSpeedMps": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Windspeedmps"
           }
         },
         "title": "RunRequest",
@@ -6263,6 +6318,61 @@
           }
         },
         "summary": "Get Weather Current"
+      }
+    },
+    "/api/scenes/{scene_id}/wind-heat": {
+      "post": {
+        "description": "POST /api/scenes/{sceneId}/wind-heat -- heat under the selected wind.\n\nThe drainage run is not repeated. The heat picture is redrawn so open\ncells cool more than sheltered cells at the selected 10 m speed. The\nresponse is a screening allowance, not a microclimate solve.",
+        "operationId": "post_wind_heat_api_scenes__scene_id__wind_heat_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scene_id",
+            "required": true,
+            "schema": {
+              "title": "Scene Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Post Wind Heat Api Scenes  Scene Id  Wind Heat Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Post Wind Heat",
+        "tags": [
+          "scenes"
+        ]
       }
     },
     "/health": {

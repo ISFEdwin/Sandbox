@@ -7,7 +7,7 @@
  */
 import { create } from 'zustand'
 
-import { getScene, getTerrain, runSimulation } from '@/api/sceneApi'
+import { fetchWindHeat, getScene, getTerrain, runSimulation, type WindHeatReading } from '@/api/sceneApi'
 import { errorMessage } from '@/api/client'
 import type {
   EnvParams,
@@ -99,6 +99,12 @@ export interface SceneState {
   windHeightM: 500 | 300 | 200
   /** Selected-table inlet divided by the annual 500 m inlet. 1 when they match. */
   windSpeedScale: number
+  /** `pland` follows the selected PlanD table. A signal preset is an HKO onset. */
+  windPreset: 'pland' | 'signal3' | 'signal8' | 'signal10' | 'manual'
+  /** Set when the preset is manual. Signal presets carry their own onset. */
+  windSpeedMps: number | null
+  windHeat: WindHeatReading | null
+  windHeatLoading: boolean
   load: (sceneId: string) => Promise<void>
   setEnvParams: (patch: Partial<EnvParams>) => void
   run: (planIds: string[] | null) => Promise<void>
@@ -117,6 +123,9 @@ export interface SceneState {
   setWindFrom: (direction: string) => void
   setWindTable: (season: 'annual' | 'summer' | 'winter', heightM: 500 | 300 | 200) => void
   setWindSpeedScale: (scale: number) => void
+  setWindPreset: (preset: 'pland' | 'signal3' | 'signal8' | 'signal10' | 'manual') => void
+  setWindSpeedMps: (speed: number) => void
+  refreshWindHeat: () => Promise<void>
   clearError: () => void
   planProjectLoading: boolean
   setPlanProjectLoading: (v: boolean) => void
@@ -150,6 +159,10 @@ export const useSceneStore = create<SceneState>((set, get) => ({
   windSeason: 'annual',
   windHeightM: 500,
   windSpeedScale: 1,
+  windPreset: 'pland',
+  windSpeedMps: null,
+  windHeat: null,
+  windHeatLoading: false,
   runResult: null,
   running: false,
   runError: null,
@@ -223,6 +236,7 @@ export const useSceneStore = create<SceneState>((set, get) => ({
     const selected = (planIds ?? []).filter(Boolean)
     set({ running: true, runError: null })
     try {
+      const { windFrom, windSeason, windHeightM, windPreset, windSpeedMps } = get()
       const result = await runSimulation(sceneId, {
         rainfallMm: Number(
           scene?.envParams.precipitation ?? DEFAULT_RAINFALL_MMH,
@@ -234,6 +248,11 @@ export const useSceneStore = create<SceneState>((set, get) => ({
           'low' | 'mean' | 'high',
         planId: selected[0] ?? null,
         planIds: selected,
+        windFrom,
+        windSeason,
+        windHeightM,
+        windPreset,
+        windSpeedMps,
       })
       set((state) => ({
         runResult: result,
@@ -290,6 +309,47 @@ export const useSceneStore = create<SceneState>((set, get) => ({
   setWindTable: (season, heightM) => set({ windSeason: season, windHeightM: heightM }),
 
   setWindSpeedScale: (scale) => set({ windSpeedScale: Number.isFinite(scale) && scale > 0 ? scale : 1 }),
+
+  setWindPreset: (preset) => set({ windPreset: preset, windSpeedMps: preset === 'manual' ? get().windSpeedMps : null }),
+
+  setWindSpeedMps: (speed) => set({
+    windPreset: 'manual',
+    windSpeedMps: Number.isFinite(speed) ? Math.min(45, Math.max(0.5, speed)) : 0.5,
+  }),
+
+  refreshWindHeat: async () => {
+    const { sceneId, scene, windFrom, windSeason, windHeightM, windPreset, windSpeedMps } = get()
+    if (!sceneId) return
+    const { usePlanStore } = await import('@/state/planStore')
+    const { runPlanIds, useSandboxStore } = await import('@/state/sandboxStore')
+    const planIds = runPlanIds(
+      usePlanStore.getState().selectedPlanIds,
+      useSandboxStore.getState(),
+    )
+    set({ windHeatLoading: true })
+    try {
+      const reading = await fetchWindHeat(sceneId, {
+        temperatureC: Number(scene?.envParams.temperature ?? DEFAULT_TEMPERATURE_C),
+        planId: planIds[0] ?? null,
+        planIds,
+        windFrom,
+        windSeason,
+        windHeightM,
+        windPreset,
+        windSpeedMps,
+      })
+      set((state) => ({
+        windHeat: reading,
+        windHeatLoading: false,
+        terrain: state.terrain
+          ? { ...state.terrain, heatmapUrl: reading.heatmapUrl }
+          : state.terrain,
+        layers: { ...state.layers, heatmap: true },
+      }))
+    } catch {
+      set({ windHeatLoading: false })
+    }
+  },
 
   clearError: () => set({ error: null }),
 }))

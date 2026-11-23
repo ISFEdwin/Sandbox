@@ -215,6 +215,11 @@ export async function fetchComparison(
     rainfallMm: number
     temperatureC: number
     tideState: string
+    windFrom?: string
+    windSeason?: 'annual' | 'summer' | 'winter'
+    windHeightM?: 500 | 300 | 200
+    windPreset?: 'pland' | 'signal3' | 'signal8' | 'signal10' | 'manual'
+    windSpeedMps?: number | null
   },
 ): Promise<ComparisonResult> {
   const { data } = await http.post<ComparisonResult>(

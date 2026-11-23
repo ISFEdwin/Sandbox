@@ -46,7 +46,7 @@ function formatValue(value: number | null, key: string, unit: string): string {
   if (unit === 'ha') return value.toFixed(2)
   if (unit === '%') return value.toFixed(1)
   if (unit === 'm') return value.toFixed(1)
-  if (unit === 'mCD') return value.toFixed(2)
+  if (unit === 'mCD' || unit === '°C') return value.toFixed(2)
   return String(value)
 }
 
@@ -271,18 +271,24 @@ export default function ComparisonPanel() {
     Number(scene?.envParams.durationHours ?? 1)
   const temperatureC = Number(scene?.envParams.temperature ?? 30)
   const tideState = String(scene?.envParams.tideState ?? 'low')
+  const windFrom = useSceneStore((s) => s.windFrom)
+  const windSeason = useSceneStore((s) => s.windSeason)
+  const windHeightM = useSceneStore((s) => s.windHeightM)
+  const windPreset = useSceneStore((s) => s.windPreset)
+  const windSpeedMps = useSceneStore((s) => s.windSpeedMps)
 
   const lastKey = useRef('')
 
   const runCompare = useCallback(async () => {
     if (!sceneId) return
-    lastKey.current = `${bPlanIds.join(',')}|${rainfallMm}|${tideState}`
+    const windKey = `${windFrom}|${windSeason}|${windHeightM}|${windPreset}|${windSpeedMps ?? ''}`
+    lastKey.current = `${bPlanIds.join(',')}|${rainfallMm}|${tideState}|${windKey}`
     await compare(
       sceneId,
       { planIds: bPlanIds, label: bLabel },
-      { rainfallMm, temperatureC, tideState },
+      { rainfallMm, temperatureC, tideState, windFrom, windSeason, windHeightM, windPreset, windSpeedMps },
     )
-  }, [sceneId, compare, bPlanIds, bLabel, rainfallMm, temperatureC, tideState])
+  }, [sceneId, compare, bPlanIds, bLabel, rainfallMm, temperatureC, tideState, windFrom, windSeason, windHeightM, windPreset, windSpeedMps])
 
   // The board follows the schemes. Once a comparison exists, toggling a project
   // — or confirming an intervention onto the sandbox — re-reads it after a short
@@ -290,7 +296,7 @@ export default function ComparisonPanel() {
   // still an explicit press: nothing fetches on mount.
   useEffect(() => {
     if (!result) return
-    const key = `${bPlanIds.join(',')}|${rainfallMm}|${tideState}`
+    const key = `${bPlanIds.join(',')}|${rainfallMm}|${tideState}|${windFrom}|${windSeason}|${windHeightM}|${windPreset}|${windSpeedMps ?? ''}`
     if (key === lastKey.current) return
     const timer = setTimeout(() => {
       void runCompare()
@@ -298,7 +304,7 @@ export default function ComparisonPanel() {
     return () => clearTimeout(timer)
     // `result` is read only as a "has this run before" gate.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bPlanIds.join(','), rainfallMm, tideState])
+  }, [bPlanIds.join(','), rainfallMm, tideState, windFrom, windSeason, windHeightM, windPreset, windSpeedMps])
 
   const onPinA = () => {
     setA(bPlanIds, bLabel)

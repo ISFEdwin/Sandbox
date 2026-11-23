@@ -1639,6 +1639,24 @@ def post_run(scene_id: str, body: RunRequest) -> dict:
     if not plan_ids and body.plan_id:
         plan_ids = [body.plan_id]
 
+    from app.services.wind_presets import resolve_wind
+
+    wind = None
+    if any(value is not None for value in (
+        body.wind_from, body.wind_preset, body.wind_speed_mps,
+    )):
+        wind = resolve_wind(
+            direction=body.wind_from,
+            season=body.wind_season,
+            height_m=body.wind_height_m,
+            preset=body.wind_preset,
+            speed_mps=body.wind_speed_mps,
+        )
+        if wind is None or not wind.get("ok"):
+            raise HTTPException(
+                status_code=422,
+                detail=(wind or {}).get("reason") or "wind could not be resolved",
+            )
     try:
         return run_service.run_scenario(
             scene_id,
@@ -1648,6 +1666,44 @@ def post_run(scene_id: str, body: RunRequest) -> dict:
             features=intervention_features_many(plan_ids),
             plan_ids=plan_ids,
             tide_state=body.tide_state,
+            wind=wind,
+        )
+    except run_service.RunInputsError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from None
+
+
+@router.post("/scenes/{scene_id}/wind-heat")
+def post_wind_heat(scene_id: str, body: RunRequest) -> dict:
+    """POST /api/scenes/{sceneId}/wind-heat -- heat under the selected wind.
+
+    The drainage run is not repeated. The heat picture is redrawn so open
+    cells cool more than sheltered cells at the selected 10 m speed. The
+    response is a screening allowance, not a microclimate solve.
+    """
+    from app.services import run_service
+    from app.services.wind_presets import resolve_wind
+
+    plan_ids = [p for p in (body.plan_ids or []) if p]
+    if not plan_ids and body.plan_id:
+        plan_ids = [body.plan_id]
+    wind = resolve_wind(
+        direction=body.wind_from or "NE",
+        season=body.wind_season,
+        height_m=body.wind_height_m,
+        preset=body.wind_preset or "pland",
+        speed_mps=body.wind_speed_mps,
+    )
+    if wind is None or not wind.get("ok"):
+        raise HTTPException(
+            status_code=422,
+            detail=(wind or {}).get("reason") or "wind could not be resolved",
+        )
+    try:
+        return run_service.wind_heat_overlay(
+            scene_id,
+            temperature_c=body.temperature_c,
+            features=intervention_features_many(plan_ids),
+            wind=wind,
         )
     except run_service.RunInputsError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from None

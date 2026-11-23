@@ -47,6 +47,7 @@ Black, one real input driving one honest output.
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 from typing import Any
 
@@ -77,6 +78,15 @@ SCENARIO_PRESETS: dict[str, dict[str, Any]] = {
 # (see data/reference/lst_scenes.json); the others are partial or fully clouded
 # and are carried as corroboration only.
 CANONICAL_SCENE_ID = "LC08_L2SP_122044_20220903_02_T1"
+
+# Screening ventilation. At the PlanD 10 m reference the shift is zero, because
+# that speed is already the condition the anchored field was read at. Each
+# doubling of the 10 m speed cools an open cell by this many degrees; a
+# sheltered cell (high frontal-area density) cools by a quarter of that. The
+# shift is capped. It is an allowance, not a convective solve.
+EXPOSED_C_PER_DOUBLING = 0.8
+SHELTERED_FRACTION = 0.25
+VENTILATION_CAP_C = 3.0
 
 LST_STATUS = "SCREENING_SURFACE_TEMPERATURE_ANCHORED_TO_OBSERVED_LST"
 LST_WARNING = (
@@ -142,6 +152,68 @@ def resample_to_grid(src: np.ndarray, rows: int, cols: int) -> np.ndarray:
     return (top * (1 - wy) + bottom * wy).astype(np.float32)
 
 
+def ventilation_cooling_c(
+    fad: np.ndarray,
+    wind_speed_mps: float | None,
+    reference_speed_mps: float | None,
+) -> np.ndarray:
+    """Degrees to subtract from the surface field.
+
+    Zero when the selected 10 m speed matches the PlanD reference, or when
+    either speed is missing. Positive means a faster wind cools the cell.
+    Open cells take the full allowance; sheltered cells take a quarter.
+    """
+    field = np.asarray(fad, dtype=np.float32)
+    if (
+        wind_speed_mps is None
+        or reference_speed_mps is None
+        or wind_speed_mps <= 0
+        or reference_speed_mps <= 0
+    ):
+        return np.zeros(field.shape, dtype=np.float32)
+    doublings = math.log(float(wind_speed_mps) / float(reference_speed_mps)) / math.log(2.0)
+    exposed = max(-VENTILATION_CAP_C, min(VENTILATION_CAP_C, EXPOSED_C_PER_DOUBLING * doublings))
+    hi = float(np.percentile(field, 90)) if field.size else 0.0
+    if hi <= 1e-6:
+        shelter = np.zeros(field.shape, dtype=np.float32)
+    else:
+        shelter = np.clip(field / np.float32(hi), 0.0, 1.0).astype(np.float32)
+    mix = (1.0 - shelter) + np.float32(SHELTERED_FRACTION) * shelter
+    return (np.float32(exposed) * mix).astype(np.float32)
+
+
+def ventilation_report(
+    fad: np.ndarray,
+    wind_speed_mps: float | None,
+    reference_speed_mps: float | None,
+) -> dict[str, Any]:
+    """The allowance as numbers a board can print, plus the per-cell field."""
+    cooling = ventilation_cooling_c(fad, wind_speed_mps, reference_speed_mps)
+    applied = wind_speed_mps is not None and reference_speed_mps is not None
+    exposed = 0.0
+    if applied and wind_speed_mps and reference_speed_mps and reference_speed_mps > 0:
+        doublings = math.log(float(wind_speed_mps) / float(reference_speed_mps)) / math.log(2.0)
+        exposed = max(-VENTILATION_CAP_C, min(VENTILATION_CAP_C, EXPOSED_C_PER_DOUBLING * doublings))
+    return {
+        "applied": applied and abs(exposed) > 1e-6,
+        "windSpeedMps": None if wind_speed_mps is None else round(float(wind_speed_mps), 3),
+        "referenceSpeedMps": (
+            None if reference_speed_mps is None else round(float(reference_speed_mps), 4)
+        ),
+        "meanCoolingC": round(float(cooling.mean()), 3) if cooling.size else 0.0,
+        "openCellCoolingC": round(exposed, 3),
+        "shelteredCellCoolingC": round(exposed * SHELTERED_FRACTION, 3),
+        "capC": VENTILATION_CAP_C,
+        "coolingC": cooling,
+        "note": (
+            "Open cells cool more than sheltered cells as the 10 m speed rises "
+            "above the PlanD inlet. Capped at "
+            f"{VENTILATION_CAP_C:.0f} C. A screening allowance, not a solved "
+            "energy balance, and not a velocity ratio."
+        ),
+    }
+
+
 def temperature_field(
     *,
     land_index: np.ndarray,
@@ -150,6 +222,8 @@ def temperature_field(
     fad: np.ndarray,
     lst_base: np.ndarray | None = None,
     scenario_mean_c: float | None = None,
+    wind_speed_mps: float | None = None,
+    reference_speed_mps: float | None = None,
 ) -> dict[str, Any]:
     """The anchored surface-temperature field, absolute and as an anomaly.
 
@@ -200,6 +274,13 @@ def temperature_field(
     shift = target_mean - float(surface_c.mean())
     surface_c = (surface_c + shift).astype(np.float32)
 
+    # The re-anchor is the reference-wind mean. A different 10 m speed then
+    # moves the field: open cells by the full allowance, sheltered cells by
+    # a quarter. Omitting the speeds leaves the pinned field unchanged.
+    report = ventilation_report(fad_a, wind_speed_mps, reference_speed_mps)
+    cooling = report.pop("coolingC")
+    surface_c = (surface_c - cooling).astype(np.float32)
+
     anomaly_c = (surface_c - float(surface_c.mean())).astype(np.float32)
     air_estimate_c = (surface_c - SURFACE_TO_AIR_OFFSET_C).astype(np.float32)
 
@@ -215,6 +296,7 @@ def temperature_field(
         "observedMeanC": round(observed_mean, 3),
         "scenarioMeanC": round(target_mean, 3),
         "surfaceToAirOffsetC": SURFACE_TO_AIR_OFFSET_C,
+        "ventilation": report,
         "status": LST_STATUS,
         "warning": LST_WARNING,
     }

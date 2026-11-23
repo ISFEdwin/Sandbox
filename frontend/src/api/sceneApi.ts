@@ -47,6 +47,35 @@ export async function getTerrain(sceneId: string): Promise<TerrainMeta> {
  */
 const RUN_TIMEOUT_MS = 90_000
 
+export interface WindRequest {
+  windFrom?: string
+  windSeason?: 'annual' | 'summer' | 'winter'
+  windHeightM?: 500 | 300 | 200
+  windPreset?: 'pland' | 'signal3' | 'signal8' | 'signal10' | 'manual'
+  windSpeedMps?: number | null
+}
+
+export interface WindHeatReading {
+  heatmapUrl: string
+  surfaceMeanC: number
+  airMeanC: number
+  scenarioMeanC: number
+  ventilation: {
+    applied: boolean
+    meanCoolingC: number
+    openCellCoolingC: number
+    shelteredCellCoolingC: number
+    capC?: number
+    windSpeedMps: number | null
+    referenceSpeedMps: number | null
+    label?: string
+    direction?: string
+    note?: string
+    presetNote?: string
+  }
+  warning?: string
+}
+
 export async function runSimulation(
   sceneId: string,
   body: {
@@ -55,9 +84,23 @@ export async function runSimulation(
     tideState?: 'low' | 'mean' | 'high'
     planId: string | null
     planIds?: string[]
-  },
+  } & WindRequest,
 ): Promise<RunResult> {
   const { data } = await http.post<RunResult>(`/scenes/${sceneId}/run`, body, {
+    timeout: RUN_TIMEOUT_MS,
+  })
+  return data
+}
+
+export async function fetchWindHeat(
+  sceneId: string,
+  body: {
+    temperatureC: number
+    planId: string | null
+    planIds?: string[]
+  } & WindRequest,
+): Promise<WindHeatReading> {
+  const { data } = await http.post<WindHeatReading>(`/scenes/${sceneId}/wind-heat`, body, {
     timeout: RUN_TIMEOUT_MS,
   })
   return data

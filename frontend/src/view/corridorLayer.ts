@@ -43,6 +43,7 @@ export interface CorridorLine {
 
 export interface CorridorHandle {
   dispose: () => void
+  recolor?: (scale: number) => void
 }
 
 const EMPTY: CorridorHandle = { dispose: () => undefined }
