@@ -38,8 +38,8 @@ jobs:
       backend: ${{ steps.filter.outputs.backend }}
       contract: ${{ steps.filter.outputs.contract }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3.0.2
+      - uses: actions/checkout@v5
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: |
@@ -71,8 +71,8 @@ jobs:
       # locale is not UTF-8. Ubuntu runners usually are; this makes it certain.
       PYTHONUTF8: "1"
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.14"
           cache: pip
@@ -138,8 +138,8 @@ jobs:
     # than "backend". test_openapi_contract covers the same ground inside the
     # backend job; this step exists for the error message that names the fix.
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.14"
           cache: pip
@@ -152,6 +152,27 @@ jobs:
             echo "::error file=contracts/openapi.json::A route or schema changed but contracts/openapi.json was not regenerated. Run: cd backend && python -m app.export_openapi, then commit contracts/openapi.json. Never hand-edit it."
             exit 1
           }
+      # oasdiff classifies the contract diff. Adding a field is not a break;
+      # removing or renaming one is. The base is the PR base, or the previous
+      # commit on a push to main.
+      - name: OpenAPI breaking changes
+        if: github.event_name == 'pull_request' || github.event.before != '0000000000000000000000000000000000000000'
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /tmp/oasdiff.tar.gz \
+            https://github.com/oasdiff/oasdiff/releases/download/v1.39.0/oasdiff_1.39.0_linux_amd64.tar.gz
+          echo "71a85930728f367a2086077b7ae1411319421549d18473a3e8258b6451520433  /tmp/oasdiff.tar.gz" | sha256sum -c -
+          tar -xzf /tmp/oasdiff.tar.gz -C /tmp
+          sudo install -m 755 /tmp/oasdiff /usr/local/bin/oasdiff
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            base="${{ github.event.pull_request.base.sha }}"
+          else
+            base="${{ github.event.before }}"
+          fi
+          git fetch --no-tags --depth=1 origin "$base"
+          git show "$base:contracts/openapi.json" > /tmp/openapi-base.json
+          oasdiff breaking /tmp/openapi-base.json contracts/openapi.json
 
   frontend:
     needs: changes
@@ -162,8 +183,8 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm

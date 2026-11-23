@@ -9,7 +9,12 @@ Writes ``data/reference/hsk_site_wind.json``. ``verified`` is true only when
 all nine occurrence tables (annual / summer / winter at 500, 300 and 200 m)
 parse. A failed fetch leaves ``verified: false`` and does not invent a rose.
 
+``--window-only`` writes ``data/reference/hsk_site_wind_window.json``: the
+area-weighted annual 500 m rose of every cell the study window touches. It
+does not rewrite the centroid file.
+
 Run from backend/:  python scripts/fetch_site_wind.py
+                    python scripts/fetch_site_wind.py --window-only
 """
 from __future__ import annotations
 
@@ -25,6 +30,7 @@ from rasterio.warp import transform
 
 BACKEND = Path(__file__).resolve().parents[1]
 OUT = BACKEND / "data" / "reference" / "hsk_site_wind.json"
+WINDOW_OUT = BACKEND / "data" / "reference" / "hsk_site_wind_window.json"
 INDEX_URL = (
     "https://www.pland.gov.hk/pland_en/resources/site_wind/open_data/"
     "site_wind_open_data.csv"
@@ -133,6 +139,280 @@ def _parse_table(text: str) -> dict:
 def _fetch_text(url: str) -> str:
     with urllib.request.urlopen(url.strip(), timeout=60) as response:
         return response.read().decode("utf-8")
+
+
+def _grid_id(row: dict[str, str]) -> str:
+    return row.get("GRID_ID") or row.get("\ufeffGRID_ID") or ""
+
+
+def _overlap(a0: float, a1: float, b0: float, b1: float) -> float:
+    return max(0.0, min(a1, b1) - max(a0, b0))
+
+
+def merge_roses(cells: list[dict]) -> dict:
+    """Area-weighted mean of annual occurrence tables.
+
+    ``cells`` each carry ``weightM2``, ``frequencyByDirection`` and
+    ``speedBins`` with the same bin labels and the 16 canonical directions.
+    A zero total weight is refused: an empty overlap is not a rose.
+    """
+    weighted = [cell for cell in cells if float(cell["weightM2"]) > 0.0]
+    total = sum(float(cell["weightM2"]) for cell in weighted)
+    if total <= 0.0 or not weighted:
+        raise ValueError("window overlap has no positive area")
+    template = weighted[0]["speedBins"]
+    for cell in weighted[1:]:
+        labels = [band["bin"] for band in cell["speedBins"]]
+        if labels != [band["bin"] for band in template]:
+            raise ValueError("speed-bin labels differ between PlanD cells")
+    frequency: dict[str, float] = {}
+    for name in DIRECTIONS:
+        frequency[name] = round(
+            sum(float(cell["weightM2"]) * float(cell["frequencyByDirection"][name])
+                for cell in weighted) / total,
+            6,
+        )
+    bins: list[dict] = []
+    for index, band in enumerate(template):
+        occurrence = {
+            name: round(
+                sum(float(cell["weightM2"])
+                    * float(cell["speedBins"][index]["occurrenceByDirection"][name])
+                    for cell in weighted) / total,
+                6,
+            )
+            for name in DIRECTIONS
+        }
+        bins.append({
+            "bin": band["bin"],
+            "speedLowMps": band["speedLowMps"],
+            "speedHighMps": band["speedHighMps"],
+            "occurrenceByDirection": occurrence,
+        })
+    derived: dict[str, float | None] = {}
+    for name in DIRECTIONS:
+        moment = 0.0
+        mass = 0.0
+        for band in bins:
+            occurrence = band["occurrenceByDirection"][name]
+            midpoint = 0.5 * (band["speedLowMps"] + band["speedHighMps"])
+            mass += occurrence
+            moment += occurrence * midpoint
+        derived[name] = (round(moment / mass, 4) if mass > 0.0 else None)
+    return {
+        "frequencyByDirection": frequency,
+        "frequencySum": round(sum(frequency.values()), 6),
+        "speedBins": bins,
+        "derivedMeanSpeedMps": derived,
+        "derivedMeanSpeedMethod": (
+            "Frequency-weighted midpoint of the area-weighted speed bins. "
+            "PlanD does not publish a window mean; this figure is calculated "
+            "from the occurrence tables and is not a measurement of its own."
+        ),
+        "weightM2": round(total, 3),
+    }
+
+
+def _season_summary(cells: list[dict], merged: dict) -> dict:
+    """Frequencies and derived speeds only. The annual file keeps the bins."""
+    return {
+        "verified": True,
+        "heightM": 500,
+        "frequencyByDirection": merged["frequencyByDirection"],
+        "frequencySum": merged["frequencySum"],
+        "derivedMeanSpeedMps": merged["derivedMeanSpeedMps"],
+        "east": {
+            "frequency": merged["frequencyByDirection"].get("E"),
+            "derivedMeanSpeedMps": (merged.get("derivedMeanSpeedMps") or {}).get("E"),
+        },
+        "cells": [
+            {
+                "gridCellId": cell["gridCellId"],
+                "weightShare": cell.get("weightShare"),
+                "frequency": cell["frequencyByDirection"].get("E"),
+                "derivedMeanSpeedMps": (cell.get("derivedMeanSpeedMps") or {}).get("E"),
+                "fileUrl": cell.get("fileUrl"),
+            }
+            for cell in cells
+        ],
+    }
+
+
+def collect_window() -> int:
+    """Write the area-weighted annual 500 m rose for every cell the window touches.
+
+    The centroid file stays as cell 3463. This file is the study window.
+    """
+    west, south, east, north = _study_window()
+    corner_xy = {
+        "sw": _to_hk1980(west, south),
+        "se": _to_hk1980(east, south),
+        "nw": _to_hk1980(west, north),
+        "ne": _to_hk1980(east, north),
+    }
+    min_e = min(point[0] for point in corner_xy.values())
+    max_e = max(point[0] for point in corner_xy.values())
+    min_n = min(point[1] for point in corner_xy.values())
+    max_n = max(point[1] for point in corner_xy.values())
+    try:
+        rows = _index_rows()
+    except Exception as exc:  # noqa: BLE001
+        WINDOW_OUT.write_text(json.dumps({
+            "artefact": "site_wind_window",
+            "verified": False,
+            "reason": f"index fetch failed: {exc}",
+            "retrieved": date.today().isoformat(),
+        }, indent=2), encoding="utf-8")
+        print("window unverified:", exc)
+        return 1
+
+    annual_500 = [
+        row for row in rows
+        if row.get("RANGE_TYPE") == "annual" and row.get("HEIGHT") == "500"
+    ]
+    hits = []
+    for row in annual_500:
+        area = (
+            _overlap(min_e, max_e, float(row["MIN_X"]), float(row["MAX_X"]))
+            * _overlap(min_n, max_n, float(row["MIN_Y"]), float(row["MAX_Y"]))
+        )
+        if area > 0.0:
+            hits.append((area, row))
+    hits.sort(key=lambda item: _grid_id(item[1]))
+    if not hits:
+        WINDOW_OUT.write_text(json.dumps({
+            "artefact": "site_wind_window",
+            "verified": False,
+            "reason": "no annual/500 cell intersects the study window",
+            "retrieved": date.today().isoformat(),
+        }, indent=2), encoding="utf-8")
+        print("window unverified: no cells")
+        return 1
+
+    cells: list[dict] = []
+    errors: list[str] = []
+    for area, row in hits:
+        grid_id = _grid_id(row)
+        url = (row.get("FILE_URL") or "").strip()
+        try:
+            parsed = _parse_table(_fetch_text(url))
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"{grid_id}: {exc}")
+            continue
+        cells.append({
+            "gridCellId": grid_id,
+            "weightM2": round(area, 3),
+            "hk1980": {
+                "minEasting": float(row["MIN_X"]),
+                "minNorthing": float(row["MIN_Y"]),
+                "maxEasting": float(row["MAX_X"]),
+                "maxNorthing": float(row["MAX_Y"]),
+            },
+            "fileUrl": url,
+            "frequencyByDirection": parsed["frequencyByDirection"],
+            "frequencySum": parsed["frequencySum"],
+            "speedBins": parsed["speedBins"],
+            "derivedMeanSpeedMps": parsed["derivedMeanSpeedMps"],
+        })
+    verified = not errors and len(cells) == len(hits)
+    merged: dict = {}
+    if verified:
+        try:
+            merged = merge_roses(cells)
+        except ValueError as exc:
+            errors.append(str(exc))
+            verified = False
+    total = sum(cell["weightM2"] for cell in cells) or 1.0
+    for cell in cells:
+        cell["weightShare"] = round(cell["weightM2"] / total, 6)
+    seasons = {
+        "annual": _season_summary(cells, merged) if merged else {"verified": False},
+    }
+    by_id = {cell["gridCellId"]: cell for cell in cells}
+    for season in ("summer", "winter"):
+        seasonal: list[dict] = []
+        for grid_id, cell in by_id.items():
+            match = [
+                row for row in rows
+                if _grid_id(row) == grid_id
+                and row.get("RANGE_TYPE") == season
+                and row.get("HEIGHT") == "500"
+            ]
+            if len(match) != 1:
+                errors.append(f"{season} 500 m {grid_id}: {len(match)} index rows")
+                continue
+            url = (match[0].get("FILE_URL") or "").strip()
+            try:
+                parsed = _parse_table(_fetch_text(url))
+            except Exception as exc:  # noqa: BLE001
+                errors.append(f"{season} 500 m {grid_id}: {exc}")
+                continue
+            seasonal.append({
+                "gridCellId": grid_id,
+                "weightM2": cell["weightM2"],
+                "weightShare": cell.get("weightShare"),
+                "fileUrl": url,
+                "frequencyByDirection": parsed["frequencyByDirection"],
+                "speedBins": parsed["speedBins"],
+                "derivedMeanSpeedMps": parsed["derivedMeanSpeedMps"],
+            })
+        if len(seasonal) == len(cells) and cells:
+            try:
+                seasons[season] = _season_summary(seasonal, merge_roses(seasonal))
+            except ValueError as exc:
+                errors.append(f"{season} 500 m: {exc}")
+                seasons[season] = {"verified": False, "reason": str(exc)}
+        else:
+            seasons[season] = {"verified": False}
+    document = {
+        "artefact": "site_wind_window",
+        "verified": verified,
+        "retrieved": date.today().isoformat(),
+        "retrievedTimezone": timezone.utc.tzname(None),
+        "season": "annual",
+        "heightM": 500,
+        "method": (
+            "Area-weighted mean of the PlanD annual 500 m occurrence tables "
+            "for every cell whose HK1980 rectangle intersects the study "
+            "window's HK1980 bounding box. The weight is that intersection "
+            "area. It is not a new measurement and it is not a velocity."
+        ),
+        "studyWindow": {
+            "west": west, "south": south, "east": east, "north": north,
+            "hk1980Bbox": {
+                "minEasting": round(min_e, 3),
+                "minNorthing": round(min_n, 3),
+                "maxEasting": round(max_e, 3),
+                "maxNorthing": round(max_n, 3),
+            },
+        },
+        "gridCellIds": [cell["gridCellId"] for cell in cells],
+        "cells": cells,
+        "merged": merged,
+        "seasons": seasons,
+        "provenance": {
+            "dataset": "Planning Department Site Wind Availability Data",
+            "datasetUrl": DATASET_URL,
+            "indexUrl": INDEX_URL,
+        },
+        "errors": errors,
+        "whatThisIsNot": [
+            "Not a velocity ratio and not a model result.",
+            "Not a replacement for the centroid cell in hsk_site_wind.json. "
+            "directionWeights=site still reads that cell.",
+            "The corridor cost does not use these frequencies. "
+            "directionWeights=window selects the headline corridor only.",
+        ],
+    }
+    WINDOW_OUT.parent.mkdir(parents=True, exist_ok=True)
+    WINDOW_OUT.write_text(json.dumps(document, indent=2), encoding="utf-8")
+    print(
+        "wrote", WINDOW_OUT, "verified", verified,
+        "cells", document["gridCellIds"],
+    )
+    if errors:
+        print("errors:", errors)
+    return 0 if verified else 1
 
 
 def main() -> int:
@@ -269,4 +549,6 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    if "--window-only" in sys.argv:
+        sys.exit(collect_window())
     sys.exit(main())

@@ -73,6 +73,114 @@ export interface ComparisonScheme {
   wind: ComparisonWind
 }
 
+export interface DataCollectionRow {
+  id: string
+  class: string
+  name: string
+  count: number | null
+  source: string | null
+  planId?: string | null
+  known: string[]
+  unknown: string[]
+}
+
+export interface WindChannelOption {
+  direction: string
+  frequency: number | null
+  aFirstObstructionMeanM?: number | null
+  bFirstObstructionMeanM?: number | null
+  aPathLengthM?: number | null
+  bPathLengthM?: number | null
+  aEntryEdge?: string | null
+  bEntryEdge?: string | null
+  aFadRatio?: number | null
+  bFadRatio?: number | null
+}
+
+export interface EastChannelSeason {
+  season: string
+  verified: boolean
+  heightM?: number
+  frequency?: number | null
+  derivedMeanSpeedMps?: number | null
+  rank?: number | null
+  of?: number | null
+  leadingDirection?: string | null
+  leadingFrequency?: number | null
+}
+
+export interface EastChannelCell {
+  gridCellId: string
+  weightShare?: number | null
+  frequency?: number | null
+  derivedMeanSpeedMps?: number | null
+  fileUrl?: string | null
+}
+
+export interface EastChannelSide {
+  firstObstructionMeanM: number | null
+  pathLengthM: number | null
+  entryEdge: string | null
+  fadRatio: number | null
+  unit: string
+}
+
+/** The east rose, the four cells, and the two schemes. Not a velocity ratio. */
+export interface EastChannel {
+  status: string
+  direction: 'E'
+  role: string
+  notAVelocity: boolean
+  annualFrequency: number | null
+  annualRank: number | null
+  annualOf: number | null
+  derivedMeanSpeedMps: number | null
+  heightM: number
+  seasons: EastChannelSeason[]
+  cells: EastChannelCell[]
+  centroid: {
+    gridCellId: string | null
+    frequency: number | null
+    derivedMeanSpeedMps: number | null
+    inletSpeedMps: number | null
+    note: string | null
+  }
+  solvedStreamlineCount: number | null
+  solvedOnRequestPath: boolean
+  scheme: { a: EastChannelSide; b: EastChannelSide }
+  sources: Array<{ name: string | null; url: string | null }>
+  reading: string
+}
+
+export interface DataCollectionRecord {
+  status: string
+  screeningLabel: string
+  notADetermination: boolean
+  inventory: DataCollectionRow[]
+  classesNotHeld: string[]
+  furtherInformation: string[]
+  windInflow: {
+    status: string
+    headlineDirection: string | null
+    headlineFrequency: number | null
+    cellIds: string[]
+  }
+}
+
+export interface WindChannelReading {
+  status: string
+  notAnAva: boolean
+  inflow: DataCollectionRecord['windInflow']
+  options: WindChannelOption[]
+  east?: EastChannel
+  velocityRatio: {
+    svr: null
+    lvr: null
+    reason: string
+  }
+  benchmark?: string
+}
+
 export interface ComparisonResult {
   sceneId: string
   status: string
@@ -85,6 +193,8 @@ export interface ComparisonResult {
   }
   schemes: { a: ComparisonScheme; b: ComparisonScheme }
   axes: ComparisonAxis[]
+  dataCollection?: DataCollectionRecord
+  windChannel?: WindChannelReading
   /** Always null. The absence is the product decision, not a missing feature. */
   combinedScore: null
   whyNoCombinedScore: string

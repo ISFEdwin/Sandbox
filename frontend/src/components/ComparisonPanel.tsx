@@ -22,7 +22,7 @@ import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 
 import HudPanel from '@/components/HudPanel'
-import type { ComparisonAxis, ComparisonWind } from '@/api/comparisonApi'
+import type { ComparisonAxis, ComparisonWind, EastChannel } from '@/api/comparisonApi'
 import { useComparisonStore } from '@/state/comparisonStore'
 import { usePlanStore } from '@/state/planStore'
 import { runPlanIds, useSandboxStore } from '@/state/sandboxStore'
@@ -63,6 +63,109 @@ const TONE_COLOUR = {
   bad: '#ff9b6a',
   flat: 'rgba(190, 210, 200, 0.72)',
 } as const
+
+function share(value: number | null | undefined): string {
+  if (value == null || Number.isNaN(value)) return '—'
+  return `${(value * 100).toFixed(1)}%`
+}
+
+function metres(value: number | null | undefined): string {
+  if (value == null || Number.isNaN(value)) return '—'
+  return value.toFixed(1)
+}
+
+function speed(value: number | null | undefined): string {
+  if (value == null || Number.isNaN(value)) return '—'
+  return value.toFixed(2)
+}
+
+/** East is the annual headline. Summer and winter sit beside it so it is not read as the year-round wind. */
+function EastChannelCard({ east }: { east: EastChannel }) {
+  const windFrom = useSceneStore((s) => s.windFrom)
+  const setWindFrom = useSceneStore((s) => s.setWindFrom)
+  const drawn = windFrom === 'E'
+  return (
+    <Box sx={{ mt: 0.5, p: 0.6, border: '1px solid', borderColor: 'divider' }}>
+      <Stack direction="row" spacing={0.5} alignItems="center">
+        <Typography className="hud-label" sx={{ fontSize: 8.5, flex: 1 }}>
+          East channel · {east.annualRank ?? '—'} of {east.annualOf ?? '—'} · annual
+        </Typography>
+        <Button
+          size="small"
+          variant={drawn ? 'contained' : 'outlined'}
+          onClick={() => setWindFrom('E')}
+          sx={{ fontSize: 9, minWidth: 0, px: 0.75, py: 0.15 }}
+        >
+          {drawn ? 'E drawn' : 'Draw E'}
+        </Button>
+      </Stack>
+      <Typography className="hud-mono" sx={{ fontSize: 10, mt: 0.25 }}>
+        E {share(east.annualFrequency)} · {speed(east.derivedMeanSpeedMps)} m/s at {east.heightM} m
+      </Typography>
+      {east.seasons.map((season) => (
+        <Typography
+          key={season.season}
+          variant="caption"
+          color="text.secondary"
+          sx={{ fontSize: 9, display: 'block' }}
+        >
+          {season.season} {share(season.frequency)}
+          {season.verified
+            ? ` · rank ${season.rank ?? '—'} of ${season.of ?? '—'} · leads ${season.leadingDirection ?? '—'} ${share(season.leadingFrequency)} · ${speed(season.derivedMeanSpeedMps)} m/s`
+            : ' · not in the window file'}
+        </Typography>
+      ))}
+      <Typography variant="caption" color="text.secondary" sx={{ fontSize: 9, display: 'block' }}>
+        Cells{' '}
+        {east.cells.map((cell) => (
+          cell.fileUrl ? (
+            <Box
+              key={cell.gridCellId}
+              component="a"
+              href={cell.fileUrl}
+              target="_blank"
+              rel="noreferrer"
+              sx={{ color: 'inherit', mr: 0.75 }}
+            >
+              {cell.gridCellId} E {share(cell.frequency)}, area {share(cell.weightShare)}
+            </Box>
+          ) : (
+            <Box key={cell.gridCellId} component="span" sx={{ mr: 0.75 }}>
+              {cell.gridCellId} E {share(cell.frequency)}, area {share(cell.weightShare)}
+            </Box>
+          )
+        ))}
+      </Typography>
+      <Typography variant="caption" color="text.secondary" sx={{ fontSize: 9, display: 'block' }}>
+        Centroid {east.centroid.gridCellId ?? '—'} inlet {speed(east.centroid.inletSpeedMps)} m/s at 10 m.
+        Solved streamlines {east.solvedStreamlineCount ?? '—'}, off the request path.
+      </Typography>
+      <Typography variant="caption" color="text.secondary" sx={{ fontSize: 9, display: 'block' }}>
+        First obstruction A {metres(east.scheme.a.firstObstructionMeanM)} m · B {metres(east.scheme.b.firstObstructionMeanM)} m.
+        Path A {metres(east.scheme.a.pathLengthM)} m · B {metres(east.scheme.b.pathLengthM)} m.
+        FAD A {east.scheme.a.fadRatio == null ? '—' : east.scheme.a.fadRatio.toFixed(3)} · B {east.scheme.b.fadRatio == null ? '—' : east.scheme.b.fadRatio.toFixed(3)}.
+        Metres, not a velocity ratio.
+      </Typography>
+      <Typography variant="caption" color="text.secondary" sx={{ fontSize: 9, display: 'block' }}>
+        {east.reading}
+      </Typography>
+      <Typography variant="caption" color="text.secondary" sx={{ fontSize: 8.5, display: 'block' }}>
+        {east.sources.filter((source) => source.url).map((source) => (
+          <Box
+            key={source.url}
+            component="a"
+            href={source.url ?? undefined}
+            target="_blank"
+            rel="noreferrer"
+            sx={{ color: 'inherit', display: 'block' }}
+          >
+            {source.name}
+          </Box>
+        ))}
+      </Typography>
+    </Box>
+  )
+}
 
 function WindGeometryNotes({ wind }: { wind: ComparisonWind }) {
   const ratio = wind.fadRatioByDirection?.NE
@@ -311,6 +414,25 @@ export default function ComparisonPanel() {
                 Under the published prevailing inflow (NE/ENE/E).
               </Typography>
               <WindGeometryNotes wind={result.schemes.b.wind} />
+              {result.windChannel?.east && <EastChannelCard east={result.windChannel.east} />}
+              {result.windChannel && (
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: 9, display: 'block' }}>
+                  Marched directions{' '}
+                  {result.windChannel.options
+                    .filter((option) => option.bFirstObstructionMeanM != null)
+                    .map((option) => `${option.direction} ${option.bFirstObstructionMeanM!.toFixed(1)} m`)
+                    .join(' · ')}
+                  . SVR and LVR are not computed.
+                </Typography>
+              )}
+              {result.dataCollection && (
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: 9, display: 'block' }}>
+                  Data collection: {result.dataCollection.inventory.map((row) => (
+                    row.count == null ? row.name : `${row.name} (${row.count})`
+                  )).join(', ')}
+                  . Committed projects are not held. Not a cumulative assessment.
+                </Typography>
+              )}
               <Stack direction="row" spacing={0.75} sx={{ mt: 0.5 }}>
                 <Button
                   size="small"

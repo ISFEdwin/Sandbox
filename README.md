@@ -179,7 +179,7 @@ cd backend && pytest
 cd frontend && npx tsc --noEmit && npm run lint && npm test && npm run build
 ```
 
-CI runs the same checks (`.github/workflows/ci.yml`).
+CI runs the same checks (`.github/workflows/ci.yml`) on Node.js 24 actions. The contract job also runs `oasdiff breaking` against the base `contracts/openapi.json`.
 
 ## Limitations
 

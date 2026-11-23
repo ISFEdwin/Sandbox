@@ -376,6 +376,20 @@ def compare_schemes(
                   TIDE_STATES[tide_state]["source"]),
     ]
 
+    from app.services.data_collection import collect, wind_channel_comparison
+
+    data_collection = collect(
+        scene_id,
+        compared=[
+            {"key": "a", "planIds": sides[0].get("planIds") or []},
+            {"key": "b", "planIds": sides[1].get("planIds") or []},
+        ],
+    )
+    wind_channel = wind_channel_comparison({
+        "a": a["wind"],
+        "b": b["wind"],
+    })
+
     return {
         "sceneId": scene_id,
         "status": COMPARISON_STATUS,
@@ -409,6 +423,8 @@ def compare_schemes(
             },
         },
         "axes": axes,
+        "dataCollection": data_collection,
+        "windChannel": wind_channel,
         "combinedScore": None,
         "whyNoCombinedScore": (
             "No combined score, rank or pass/fail. The axes are in different "
@@ -420,7 +436,10 @@ def compare_schemes(
             "run scores.",
             "Flood extent is routed fill-and-spill, not a flood prediction.",
             "Wind is corridor geometry under the published prevailing inflow "
-            "(NE/ENE/E); FAD is not a velocity ratio.",
+            "(NE/ENE/E). The window rose selects a headline frequency. FAD is "
+            "not a velocity ratio, and SVR and LVR are not computed.",
+            "Data collection names the existing envelopes and the planned "
+            "catalog. It does not assess cumulative impact.",
         ],
     }
 

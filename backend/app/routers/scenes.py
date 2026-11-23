@@ -1414,14 +1414,17 @@ def get_ventilation_corridors(
 
     ``directionWeights`` selects the headline corridor. Omitted, the selection
     is the AVRG73 combined NE/ENE/E fact, which is not split into per-direction
-    frequencies. ``site`` uses the verified PlanD annual 500 m occurrences.
-    ``NE:0.2,E:0.1`` is an explicit selection. Weights never enter the cell cost.
+    frequencies. ``site`` uses the verified PlanD annual 500 m occurrences for
+    the centroid cell. ``window`` uses the area-weighted occurrences of every
+    PlanD cell the study window touches. ``NE:0.2,E:0.1`` is an explicit
+    selection. Weights never enter the cell cost.
     """
     from app.services.design_metrics import CARDINALS, footprints_from_geojson
     from app.services.ventilation import (
         PRINCIPAL_DIRECTIONS,
         least_cost_corridors,
         site_direction_frequencies,
+        window_direction_frequencies,
     )
 
     scene_service.get_scene(scene_id)
@@ -1443,12 +1446,19 @@ def get_ventilation_corridors(
     weight_source = "AVRG73"
     raw_weights = (directionWeights or "").strip()
     if raw_weights:
-        if raw_weights.lower() == "site":
+        token = raw_weights.lower()
+        if token in {"site", "window"}:
             try:
-                weights = site_direction_frequencies()
+                if token == "window":
+                    weights = window_direction_frequencies()
+                    weight_source = (
+                        "PlanD site wind window, annual, 500 m, area-weighted"
+                    )
+                else:
+                    weights = site_direction_frequencies()
+                    weight_source = "PlanD site wind, annual, 500 m"
             except ValueError as e:
                 raise HTTPException(status_code=422, detail=str(e)) from e
-            weight_source = "PlanD site wind, annual, 500 m"
         else:
             weights = {}
             for part in raw_weights.split(","):
