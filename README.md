@@ -1,5 +1,22 @@
 # Sandbox — broad-brush comparison for schemes in one district
 
+## Value proposition
+
+A quick, broad-brush sandbox that lets developers and planners test any scenario, real or hypothetical, against the projects being planned around them, without anyone having to reveal their designs.
+
+The Northern Metropolis is being built piece by piece, by developers who are competitors and won’t share their plans, so every project is designed blind to its neighbours. Sandbox lets you test your layout in minutes against what’s public, what the neighbours could build, and rough numbers shared through a neutral host. It’s quick and dirty by design: rough enough to need only rough data, and early enough to change the design while it’s still cheap.
+
+This is the ground truth for the product. Feature status lives in [STATUS.md](STATUS.md). The same statement is in [AGENTS.md](AGENTS.md).
+
+## Keywords
+
+- Broad-brush
+- Quick-and-dirty
+- Hypothetical scenarios
+- Early stage
+- Incremental planning
+- Coordination
+
 A 3D comparison tool for Hung Shui Kiu / Ha Tsuen (HSK/HT) in the Northern Metropolis. Place the developments that are
 actually planned for a district, turn them on and off, add one in a sentence, swap one for another, change rainfall and
 temperature, and see what each combination does — drainage, surface heat, tide, greenery, and the wind channel — in
@@ -7,7 +24,7 @@ seconds, before a design is fixed.
 
 The prototype was built for Hack4SDG (Team 1007). Holding those schemes in one model is what makes the comparison a
 shared picture of what each project assumed about the others. The dated register is that consequence. The comparison
-is the product. The five edges, and where each one stands, are the ground truth in [STATUS.md](STATUS.md).
+is the product.
 
 > **Status:** the comparison runs locally: two schemes on seven rows, each in its own units, with no combined score.
 > The wind corridor is drawn, the storm plays hour by hour, and the gauge is a labelled reading. Criteria fit, beside

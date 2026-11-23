@@ -170,6 +170,50 @@ function decodeOverlayImage(url: string): Promise<HTMLImageElement | null> {
   })
 }
 
+/**
+ * Turn the flood grid into a continuous sheet before Cesium drapes it.
+ *
+ * The wet-grid PNG is one texel per 5 m cell (`flow_rgba` in make_wetgrid).
+ * Classification stretches that onto the terrain, so each cell becomes a hard
+ * speck and the district reads as stipple. Upsampling and a short blur blend
+ * neighbouring cells into a flow sheet. The blur is about two cells: enough to
+ * lose the grid, not enough to move a channel across a street.
+ *
+ * Fully transparent texels (the building mask) have their colour cleared first.
+ * A blur of a transparent pixel that still carries RGB bleeds that colour out
+ * as a fringe.
+ */
+function fluentFloodSheet(image: HTMLImageElement): HTMLCanvasElement | HTMLImageElement {
+  const scale = 4
+  const src = document.createElement('canvas')
+  src.width = image.naturalWidth || image.width
+  src.height = image.naturalHeight || image.height
+  if (src.width < 2 || src.height < 2) return image
+  const srcCtx = src.getContext('2d', { willReadFrequently: true })
+  if (!srcCtx) return image
+  srcCtx.drawImage(image, 0, 0)
+  const pixels = srcCtx.getImageData(0, 0, src.width, src.height)
+  const data = pixels.data
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i + 3] === 0) {
+      data[i] = 0
+      data[i + 1] = 0
+      data[i + 2] = 0
+    }
+  }
+  srcCtx.putImageData(pixels, 0, 0)
+
+  const sheet = document.createElement('canvas')
+  sheet.width = src.width * scale
+  sheet.height = src.height * scale
+  const ctx = sheet.getContext('2d')
+  if (!ctx) return image
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = 'high'
+  ctx.filter = 'blur(8px)'
+  ctx.drawImage(src, 0, 0, sheet.width, sheet.height)
+  return sheet
+}
 
 /**
  * Records why an overlay is not on screen, so the panel can say "failed" rather
@@ -670,7 +714,7 @@ export default function SandboxViewer({ className }: SandboxViewerProps = {}) {
             setOverlayStatus(key, 'failed')
             continue
           }
-          const image = decoded
+          const image = key === 'wetGrid' ? fluentFloodSheet(decoded) : decoded
           const live = viewerRef.current
           if (!isLive(live)) return
           // The store is the truth, not the closure: the user may have switched
@@ -916,7 +960,16 @@ export default function SandboxViewer({ className }: SandboxViewerProps = {}) {
     }
 
     let cancelled = false
-    void add3DTileset(viewer, url, { modelMatrix: hk1980ToEcefMatrix(), maximumScreenSpaceError: 24, name: 'buildings' }).then((handle) => {
+    void add3DTileset(viewer, url, {
+      modelMatrix: hk1980ToEcefMatrix(),
+      // 128, not 24. The city tileset has no coarse mesh: every leaf is a dense
+      // Draco building, and 24 pulls most of them (about 250 MB) into the
+      // opening view. 128 keeps that view on a handful of tiles and only
+      // fetches a leaf once a building is large on screen.
+      maximumScreenSpaceError: 128,
+      lighter: true,
+      name: 'buildings',
+    }).then((handle) => {
       if (cancelled || !handle) return
       tilesetHandle = handle
       // While the 2.5D switch is on, the footprint overlay replaces this layer.

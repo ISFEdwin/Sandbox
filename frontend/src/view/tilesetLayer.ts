@@ -25,6 +25,13 @@ export interface TilesetOptions {
   maximumScreenSpaceError?: number
   /** Reported to the loading screen. */
   name?: TilesetName
+  /**
+   * Load fewer, coarser tiles. The city tileset's only content is the dense
+   * Draco leaf (no parent mesh), so a close orbit otherwise requests every
+   * leaf. This skips siblings, culls requests while the camera is moving, and
+   * lets screen-space error rise away from the centre of the view.
+   */
+  lighter?: boolean
 }
 
 /**
@@ -40,30 +47,31 @@ export async function add3DTileset(
 ): Promise<TilesetHandle | null> {
   if (viewer.isDestroyed()) return null
 
-  const { modelMatrix, maximumScreenSpaceError = 16, name } = options
+  const { modelMatrix, maximumScreenSpaceError = 16, name, lighter = false } = options
   const report = name ? useTileLoadStore.getState() : null
   if (name) report?.set(name, 'loading')
 
   try {
     const tileset = await Cesium3DTileset.fromUrl(url, {
       maximumScreenSpaceError,
-      // Steady detail beats fast detail here. Dynamic / foveated SSE and culling
-      // requests while moving all change the level of detail *as the camera moves*,
-      // which reads as the buildings shifting and re-texturing during a zoom. With
-      // them off the tile set only changes when the view settles.
-      dynamicScreenSpaceError: false,
-      foveatedScreenSpaceError: false,
-      cullRequestsWhileMoving: false,
-      // Load a coarse version of the first view straight away, then refine, so the
-      // loading screen can lift on a recognisable scene instead of a full-detail one.
-      progressiveResolutionHeightFraction: 0.5,
-      // Keep a parent visible until all its children are ready (no holes while
-      // refining) and do not skip levels, so detail steps up one tier at a time.
-      skipLevelOfDetail: false,
-    // The real building tileset needs room before tiles get evicted and
-    // re-fetched, which reads as flicker when orbiting.
-    cacheBytes: 768 * 1024 * 1024,
-      maximumCacheOverflowBytes: 512 * 1024 * 1024,
+      // The terrain mesh is one small tileset and should stay put while the
+      // camera moves. The city mesh is the opposite: hundreds of dense leaves
+      // and no coarser body, so holding every request until the camera settles,
+      // and not fetching siblings off to the side, is what keeps an orbit from
+      // stalling on geometry the view does not need yet.
+      dynamicScreenSpaceError: lighter,
+      foveatedScreenSpaceError: lighter,
+      foveatedConeSize: lighter ? 0.25 : 1,
+      cullRequestsWhileMoving: lighter,
+      cullRequestsWhileMovingMultiplier: lighter ? 60 : 60,
+      progressiveResolutionHeightFraction: lighter ? 0.35 : 0.5,
+      skipLevelOfDetail: lighter,
+      baseScreenSpaceError: lighter ? 1024 : 1024,
+      skipScreenSpaceErrorFactor: lighter ? 16 : 16,
+      immediatelyLoadDesiredLevelOfDetail: lighter,
+      loadSiblings: !lighter,
+      cacheBytes: (lighter ? 128 : 768) * 1024 * 1024,
+      maximumCacheOverflowBytes: (lighter ? 64 : 512) * 1024 * 1024,
     })
     if (viewer.isDestroyed()) {
       tileset.destroy()
