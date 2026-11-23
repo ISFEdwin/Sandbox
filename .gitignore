@@ -118,3 +118,5 @@ raw_data/
 # 17 Oct and had to be removed in a follow-up commit.
 .tmp_*
 *.tmp_*
+.vercel
+.env*

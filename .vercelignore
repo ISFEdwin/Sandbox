@@ -1,0 +1,33 @@
+# Deploy context is the repo root because the frontend's contract test reads
+# `contracts/intent_vocabulary.json` from above `frontend/`. That makes the root
+# the upload root, so everything heavy and non-build-input is excluded here.
+
+# ~400 MB of committed 3D tiles and GLBs. The backend serves these at
+# /static/model; the frontend build never reads them.
+backend/model/
+
+# Python virtualenvs and caches.
+backend/.venv/
+backend/.venv313/
+**/__pycache__/
+backend/.pytest_cache/
+
+# Runtime output, not source.
+backend/data/dem_cache/
+backend/data/heat_cache/
+backend/data/rasters/run/
+backend/data/rasters/comparison/
+backend/data/rasters/storm/
+backend/data/openfoam/channel/constant/
+backend/data/openfoam/channel/postProcessing/
+raw_data/
+
+# Node output.
+frontend/node_modules/
+frontend/dist/
+
+# Git and local tooling.
+.git/
+.github/
+.cursor/
+.workbuddy/

@@ -1,0 +1,52 @@
+# Render blueprint for the Sandbox API.
+#
+# The frontend is a static Vite build and lives on Vercel; this file only
+# provisions the FastAPI backend, which cannot run on Vercel (its unzipped
+# dependency set is ~265 MB, over the 250 MB function limit, and the file store
+# needs a writable disk).
+#
+# Deploy with: https://render.com/deploy?repo=https://github.com/Edw1n-F/Sandbox
+#
+# Notes that matter on the free plan:
+#   * The filesystem is ephemeral. Newly generated overlays under
+#     backend/data/rasters/{run,comparison,storm} survive until the next
+#     restart or deploy, so a redeploy resets them. Read-only content (the seed
+#     scene, projects, committed rasters, the 3D model) is committed to git and
+#     comes back with every build.
+#   * The service spins down after 15 minutes idle; the next request pays a cold
+#     start of roughly a minute.
+services:
+  - type: web
+    name: sandbox-api
+    runtime: python
+    plan: free
+    region: singapore
+    rootDir: backend
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    # `app.config` resolves DATA_DIR against backend/, never the cwd, so the
+    # relative value below is safe regardless of where Render starts the
+    # process. STATIC_BASE_URL must be absolute: the frontend is on another
+    # origin, so a bare `/static` would resolve against the Vercel domain and
+    # every overlay, terrain raster and 3D tile would 404.
+    startCommand: 'STATIC_BASE_URL="${RENDER_EXTERNAL_URL}/static" uvicorn app.main:app --host 0.0.0.0 --port $PORT'
+    healthCheckPath: /health
+    envVars:
+      # The wheels this project needs (numpy, scipy, rasterio, pydantic-core)
+      # are the versions verified locally on 3.13.
+      - key: PYTHON_VERSION
+        value: 3.13.12
+      - key: STORE_MODE
+        value: file
+      - key: DATA_DIR
+        value: ./data
+      # The frontend's production origin. A wildcard is not an option because
+      # the app sends credentials, and browsers reject credentialed CORS with
+      # `*`. Add preview domains here explicitly if they need API access.
+      - key: CORS_ORIGINS
+        value: '["https://sandbox-azure-five.vercel.app"]'
+      # Deliberately unset: no vendor LLM key, so /api/chat falls back to the
+      # deterministic parser and the demo cannot fail for want of credentials.
+      - key: LLM_BASE_URL
+        value: ''
+      - key: LLM_API_KEY
+        value: ''
