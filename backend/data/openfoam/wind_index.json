@@ -1,0 +1,828 @@
+{
+  "artefact": "openfoam-wind-index",
+  "verified": true,
+  "gridCellId": "3463",
+  "directions": [
+    "N",
+    "NNE",
+    "NE",
+    "ENE",
+    "E",
+    "ESE",
+    "SE",
+    "SSE",
+    "S",
+    "SSW",
+    "SW",
+    "WSW",
+    "W",
+    "WNW",
+    "NW",
+    "NNW"
+  ],
+  "degreesFrom": {
+    "N": 0.0,
+    "NNE": 22.5,
+    "NE": 45.0,
+    "ENE": 67.5,
+    "E": 90.0,
+    "ESE": 112.5,
+    "SE": 135.0,
+    "SSE": 157.5,
+    "S": 180.0,
+    "SSW": 202.5,
+    "SW": 225.0,
+    "WSW": 247.5,
+    "W": 270.0,
+    "WNW": 292.5,
+    "NW": 315.0,
+    "NNW": 337.5
+  },
+  "seasons": [
+    "annual",
+    "summer",
+    "winter"
+  ],
+  "heightsM": [
+    500,
+    300,
+    200
+  ],
+  "solvedSeason": "annual",
+  "solvedHeightM": 500,
+  "defaultDirection": "NE",
+  "tables": {
+    "annual": {
+      "500": {
+        "fileUrl": "https://www.pland.gov.hk/pland_en/resources/site_wind/site_wind/table/annual/d_00273_lev500.txt",
+        "directions": {
+          "N": {
+            "frequency": 0.028,
+            "derivedMeanSpeedMps": 4.3462,
+            "inletSpeedMps": 1.838
+          },
+          "NNE": {
+            "frequency": 0.073,
+            "derivedMeanSpeedMps": 6.9865,
+            "inletSpeedMps": 2.9545
+          },
+          "NE": {
+            "frequency": 0.107,
+            "derivedMeanSpeedMps": 6.9095,
+            "inletSpeedMps": 2.922
+          },
+          "ENE": {
+            "frequency": 0.102,
+            "derivedMeanSpeedMps": 5.68,
+            "inletSpeedMps": 2.402
+          },
+          "E": {
+            "frequency": 0.151,
+            "derivedMeanSpeedMps": 5.4408,
+            "inletSpeedMps": 2.3009
+          },
+          "ESE": {
+            "frequency": 0.096,
+            "derivedMeanSpeedMps": 5.1042,
+            "inletSpeedMps": 2.1585
+          },
+          "SE": {
+            "frequency": 0.08,
+            "derivedMeanSpeedMps": 6.1456,
+            "inletSpeedMps": 2.5989
+          },
+          "SSE": {
+            "frequency": 0.061,
+            "derivedMeanSpeedMps": 5.7623,
+            "inletSpeedMps": 2.4368
+          },
+          "S": {
+            "frequency": 0.066,
+            "derivedMeanSpeedMps": 5.371,
+            "inletSpeedMps": 2.2713
+          },
+          "SSW": {
+            "frequency": 0.098,
+            "derivedMeanSpeedMps": 6.3351,
+            "inletSpeedMps": 2.679
+          },
+          "SW": {
+            "frequency": 0.056,
+            "derivedMeanSpeedMps": 6.5179,
+            "inletSpeedMps": 2.7563
+          },
+          "WSW": {
+            "frequency": 0.023,
+            "derivedMeanSpeedMps": 4.5833,
+            "inletSpeedMps": 1.9382
+          },
+          "W": {
+            "frequency": 0.021,
+            "derivedMeanSpeedMps": 2.9,
+            "inletSpeedMps": 1.2264
+          },
+          "WNW": {
+            "frequency": 0.01,
+            "derivedMeanSpeedMps": 3.2,
+            "inletSpeedMps": 1.3532
+          },
+          "NW": {
+            "frequency": 0.012,
+            "derivedMeanSpeedMps": 3.2,
+            "inletSpeedMps": 1.3532
+          },
+          "NNW": {
+            "frequency": 0.015,
+            "derivedMeanSpeedMps": 3.4333,
+            "inletSpeedMps": 1.4519
+          }
+        }
+      },
+      "300": {
+        "fileUrl": "https://www.pland.gov.hk/pland_en/resources/site_wind/site_wind/table/annual/d_00273_lev300.txt",
+        "directions": {
+          "N": {
+            "frequency": 0.03,
+            "derivedMeanSpeedMps": 4.4655,
+            "inletSpeedMps": 1.8884
+          },
+          "NNE": {
+            "frequency": 0.123,
+            "derivedMeanSpeedMps": 6.5325,
+            "inletSpeedMps": 2.7625
+          },
+          "NE": {
+            "frequency": 0.108,
+            "derivedMeanSpeedMps": 5.3868,
+            "inletSpeedMps": 2.278
+          },
+          "ENE": {
+            "frequency": 0.075,
+            "derivedMeanSpeedMps": 4.4067,
+            "inletSpeedMps": 1.8635
+          },
+          "E": {
+            "frequency": 0.131,
+            "derivedMeanSpeedMps": 4.355,
+            "inletSpeedMps": 1.8417
+          },
+          "ESE": {
+            "frequency": 0.083,
+            "derivedMeanSpeedMps": 4.0,
+            "inletSpeedMps": 1.6916
+          },
+          "SE": {
+            "frequency": 0.092,
+            "derivedMeanSpeedMps": 5.3132,
+            "inletSpeedMps": 2.2469
+          },
+          "SSE": {
+            "frequency": 0.078,
+            "derivedMeanSpeedMps": 5.3289,
+            "inletSpeedMps": 2.2535
+          },
+          "S": {
+            "frequency": 0.074,
+            "derivedMeanSpeedMps": 4.7432,
+            "inletSpeedMps": 2.0058
+          },
+          "SSW": {
+            "frequency": 0.073,
+            "derivedMeanSpeedMps": 4.6408,
+            "inletSpeedMps": 1.9625
+          },
+          "SW": {
+            "frequency": 0.046,
+            "derivedMeanSpeedMps": 5.0333,
+            "inletSpeedMps": 2.1285
+          },
+          "WSW": {
+            "frequency": 0.019,
+            "derivedMeanSpeedMps": 3.0789,
+            "inletSpeedMps": 1.302
+          },
+          "W": {
+            "frequency": 0.021,
+            "derivedMeanSpeedMps": 2.2368,
+            "inletSpeedMps": 0.9459
+          },
+          "WNW": {
+            "frequency": 0.015,
+            "derivedMeanSpeedMps": 2.9667,
+            "inletSpeedMps": 1.2546
+          },
+          "NW": {
+            "frequency": 0.015,
+            "derivedMeanSpeedMps": 3.1,
+            "inletSpeedMps": 1.311
+          },
+          "NNW": {
+            "frequency": 0.015,
+            "derivedMeanSpeedMps": 2.8571,
+            "inletSpeedMps": 1.2082
+          }
+        }
+      },
+      "200": {
+        "fileUrl": "https://www.pland.gov.hk/pland_en/resources/site_wind/site_wind/table/annual/d_00273_lev200.txt",
+        "directions": {
+          "N": {
+            "frequency": 0.031,
+            "derivedMeanSpeedMps": 4.4355,
+            "inletSpeedMps": 1.8757
+          },
+          "NNE": {
+            "frequency": 0.129,
+            "derivedMeanSpeedMps": 6.4302,
+            "inletSpeedMps": 2.7193
+          },
+          "NE": {
+            "frequency": 0.104,
+            "derivedMeanSpeedMps": 5.0825,
+            "inletSpeedMps": 2.1493
+          },
+          "ENE": {
+            "frequency": 0.076,
+            "derivedMeanSpeedMps": 4.3784,
+            "inletSpeedMps": 1.8516
+          },
+          "E": {
+            "frequency": 0.131,
+            "derivedMeanSpeedMps": 4.2023,
+            "inletSpeedMps": 1.7771
+          },
+          "ESE": {
+            "frequency": 0.082,
+            "derivedMeanSpeedMps": 3.8659,
+            "inletSpeedMps": 1.6348
+          },
+          "SE": {
+            "frequency": 0.092,
+            "derivedMeanSpeedMps": 5.3132,
+            "inletSpeedMps": 2.2469
+          },
+          "SSE": {
+            "frequency": 0.078,
+            "derivedMeanSpeedMps": 5.3333,
+            "inletSpeedMps": 2.2554
+          },
+          "S": {
+            "frequency": 0.074,
+            "derivedMeanSpeedMps": 4.7329,
+            "inletSpeedMps": 2.0015
+          },
+          "SSW": {
+            "frequency": 0.071,
+            "derivedMeanSpeedMps": 4.3732,
+            "inletSpeedMps": 1.8494
+          },
+          "SW": {
+            "frequency": 0.047,
+            "derivedMeanSpeedMps": 4.9255,
+            "inletSpeedMps": 2.0829
+          },
+          "WSW": {
+            "frequency": 0.018,
+            "derivedMeanSpeedMps": 2.8333,
+            "inletSpeedMps": 1.1982
+          },
+          "W": {
+            "frequency": 0.021,
+            "derivedMeanSpeedMps": 2.15,
+            "inletSpeedMps": 0.9092
+          },
+          "WNW": {
+            "frequency": 0.016,
+            "derivedMeanSpeedMps": 2.9375,
+            "inletSpeedMps": 1.2422
+          },
+          "NW": {
+            "frequency": 0.015,
+            "derivedMeanSpeedMps": 2.8571,
+            "inletSpeedMps": 1.2082
+          },
+          "NNW": {
+            "frequency": 0.015,
+            "derivedMeanSpeedMps": 2.7,
+            "inletSpeedMps": 1.1418
+          }
+        }
+      }
+    },
+    "summer": {
+      "500": {
+        "fileUrl": "https://www.pland.gov.hk/pland_en/resources/site_wind/site_wind/table/summer/d_00273_lev500.txt",
+        "directions": {
+          "N": {
+            "frequency": 0.013,
+            "derivedMeanSpeedMps": 4.0,
+            "inletSpeedMps": 1.6916
+          },
+          "NNE": {
+            "frequency": 0.017,
+            "derivedMeanSpeedMps": 5.7353,
+            "inletSpeedMps": 2.4254
+          },
+          "NE": {
+            "frequency": 0.016,
+            "derivedMeanSpeedMps": 4.5,
+            "inletSpeedMps": 1.903
+          },
+          "ENE": {
+            "frequency": 0.024,
+            "derivedMeanSpeedMps": 6.1667,
+            "inletSpeedMps": 2.6078
+          },
+          "E": {
+            "frequency": 0.065,
+            "derivedMeanSpeedMps": 6.1061,
+            "inletSpeedMps": 2.5822
+          },
+          "ESE": {
+            "frequency": 0.08,
+            "derivedMeanSpeedMps": 5.9416,
+            "inletSpeedMps": 2.5126
+          },
+          "SE": {
+            "frequency": 0.079,
+            "derivedMeanSpeedMps": 6.7338,
+            "inletSpeedMps": 2.8477
+          },
+          "SSE": {
+            "frequency": 0.094,
+            "derivedMeanSpeedMps": 6.5753,
+            "inletSpeedMps": 2.7806
+          },
+          "S": {
+            "frequency": 0.125,
+            "derivedMeanSpeedMps": 6.2016,
+            "inletSpeedMps": 2.6226
+          },
+          "SSW": {
+            "frequency": 0.2,
+            "derivedMeanSpeedMps": 6.6168,
+            "inletSpeedMps": 2.7982
+          },
+          "SW": {
+            "frequency": 0.133,
+            "derivedMeanSpeedMps": 7.0338,
+            "inletSpeedMps": 2.9745
+          },
+          "WSW": {
+            "frequency": 0.052,
+            "derivedMeanSpeedMps": 5.0385,
+            "inletSpeedMps": 2.1307
+          },
+          "W": {
+            "frequency": 0.044,
+            "derivedMeanSpeedMps": 3.8488,
+            "inletSpeedMps": 1.6276
+          },
+          "WNW": {
+            "frequency": 0.02,
+            "derivedMeanSpeedMps": 3.6667,
+            "inletSpeedMps": 1.5506
+          },
+          "NW": {
+            "frequency": 0.02,
+            "derivedMeanSpeedMps": 4.4444,
+            "inletSpeedMps": 1.8795
+          },
+          "NNW": {
+            "frequency": 0.017,
+            "derivedMeanSpeedMps": 4.1471,
+            "inletSpeedMps": 1.7538
+          }
+        }
+      },
+      "300": {
+        "fileUrl": "https://www.pland.gov.hk/pland_en/resources/site_wind/site_wind/table/summer/d_00273_lev300.txt",
+        "directions": {
+          "N": {
+            "frequency": 0.011,
+            "derivedMeanSpeedMps": 3.7727,
+            "inletSpeedMps": 1.5954
+          },
+          "NNE": {
+            "frequency": 0.012,
+            "derivedMeanSpeedMps": 4.0,
+            "inletSpeedMps": 1.6916
+          },
+          "NE": {
+            "frequency": 0.016,
+            "derivedMeanSpeedMps": 3.4286,
+            "inletSpeedMps": 1.4499
+          },
+          "ENE": {
+            "frequency": 0.027,
+            "derivedMeanSpeedMps": 5.34,
+            "inletSpeedMps": 2.2582
+          },
+          "E": {
+            "frequency": 0.071,
+            "derivedMeanSpeedMps": 5.2429,
+            "inletSpeedMps": 2.2172
+          },
+          "ESE": {
+            "frequency": 0.063,
+            "derivedMeanSpeedMps": 4.3689,
+            "inletSpeedMps": 1.8476
+          },
+          "SE": {
+            "frequency": 0.105,
+            "derivedMeanSpeedMps": 5.9762,
+            "inletSpeedMps": 2.5273
+          },
+          "SSE": {
+            "frequency": 0.137,
+            "derivedMeanSpeedMps": 5.9963,
+            "inletSpeedMps": 2.5358
+          },
+          "S": {
+            "frequency": 0.153,
+            "derivedMeanSpeedMps": 5.4739,
+            "inletSpeedMps": 2.3149
+          },
+          "SSW": {
+            "frequency": 0.159,
+            "derivedMeanSpeedMps": 5.1335,
+            "inletSpeedMps": 2.1709
+          },
+          "SW": {
+            "frequency": 0.117,
+            "derivedMeanSpeedMps": 5.9522,
+            "inletSpeedMps": 2.5171
+          },
+          "WSW": {
+            "frequency": 0.04,
+            "derivedMeanSpeedMps": 4.425,
+            "inletSpeedMps": 1.8713
+          },
+          "W": {
+            "frequency": 0.039,
+            "derivedMeanSpeedMps": 3.0135,
+            "inletSpeedMps": 1.2744
+          },
+          "WNW": {
+            "frequency": 0.024,
+            "derivedMeanSpeedMps": 4.1087,
+            "inletSpeedMps": 1.7375
+          },
+          "NW": {
+            "frequency": 0.016,
+            "derivedMeanSpeedMps": 3.5,
+            "inletSpeedMps": 1.4801
+          },
+          "NNW": {
+            "frequency": 0.009,
+            "derivedMeanSpeedMps": 2.8333,
+            "inletSpeedMps": 1.1982
+          }
+        }
+      },
+      "200": {
+        "fileUrl": "https://www.pland.gov.hk/pland_en/resources/site_wind/site_wind/table/summer/d_00273_lev200.txt",
+        "directions": {
+          "N": {
+            "frequency": 0.011,
+            "derivedMeanSpeedMps": 3.2,
+            "inletSpeedMps": 1.3532
+          },
+          "NNE": {
+            "frequency": 0.012,
+            "derivedMeanSpeedMps": 4.1667,
+            "inletSpeedMps": 1.7621
+          },
+          "NE": {
+            "frequency": 0.016,
+            "derivedMeanSpeedMps": 2.8846,
+            "inletSpeedMps": 1.2199
+          },
+          "ENE": {
+            "frequency": 0.029,
+            "derivedMeanSpeedMps": 5.2778,
+            "inletSpeedMps": 2.2319
+          },
+          "E": {
+            "frequency": 0.073,
+            "derivedMeanSpeedMps": 4.8857,
+            "inletSpeedMps": 2.0661
+          },
+          "ESE": {
+            "frequency": 0.062,
+            "derivedMeanSpeedMps": 4.3689,
+            "inletSpeedMps": 1.8476
+          },
+          "SE": {
+            "frequency": 0.107,
+            "derivedMeanSpeedMps": 5.7897,
+            "inletSpeedMps": 2.4484
+          },
+          "SSE": {
+            "frequency": 0.137,
+            "derivedMeanSpeedMps": 5.8676,
+            "inletSpeedMps": 2.4813
+          },
+          "S": {
+            "frequency": 0.153,
+            "derivedMeanSpeedMps": 5.3013,
+            "inletSpeedMps": 2.2419
+          },
+          "SSW": {
+            "frequency": 0.156,
+            "derivedMeanSpeedMps": 4.9903,
+            "inletSpeedMps": 2.1103
+          },
+          "SW": {
+            "frequency": 0.12,
+            "derivedMeanSpeedMps": 5.8,
+            "inletSpeedMps": 2.4528
+          },
+          "WSW": {
+            "frequency": 0.036,
+            "derivedMeanSpeedMps": 4.1286,
+            "inletSpeedMps": 1.7459
+          },
+          "W": {
+            "frequency": 0.039,
+            "derivedMeanSpeedMps": 3.0135,
+            "inletSpeedMps": 1.2744
+          },
+          "WNW": {
+            "frequency": 0.025,
+            "derivedMeanSpeedMps": 4.1087,
+            "inletSpeedMps": 1.7375
+          },
+          "NW": {
+            "frequency": 0.015,
+            "derivedMeanSpeedMps": 3.5,
+            "inletSpeedMps": 1.4801
+          },
+          "NNW": {
+            "frequency": 0.008,
+            "derivedMeanSpeedMps": 3.0,
+            "inletSpeedMps": 1.2687
+          }
+        }
+      }
+    },
+    "winter": {
+      "500": {
+        "fileUrl": "https://www.pland.gov.hk/pland_en/resources/site_wind/site_wind/table/winter/d_00273_lev500.txt",
+        "directions": {
+          "N": {
+            "frequency": 0.03,
+            "derivedMeanSpeedMps": 3.9286,
+            "inletSpeedMps": 1.6614
+          },
+          "NNE": {
+            "frequency": 0.119,
+            "derivedMeanSpeedMps": 6.8866,
+            "inletSpeedMps": 2.9123
+          },
+          "NE": {
+            "frequency": 0.197,
+            "derivedMeanSpeedMps": 6.8418,
+            "inletSpeedMps": 2.8933
+          },
+          "ENE": {
+            "frequency": 0.159,
+            "derivedMeanSpeedMps": 5.4684,
+            "inletSpeedMps": 2.3125
+          },
+          "E": {
+            "frequency": 0.192,
+            "derivedMeanSpeedMps": 5.1335,
+            "inletSpeedMps": 2.1709
+          },
+          "ESE": {
+            "frequency": 0.096,
+            "derivedMeanSpeedMps": 4.4263,
+            "inletSpeedMps": 1.8718
+          },
+          "SE": {
+            "frequency": 0.072,
+            "derivedMeanSpeedMps": 5.7083,
+            "inletSpeedMps": 2.414
+          },
+          "SSE": {
+            "frequency": 0.038,
+            "derivedMeanSpeedMps": 4.9865,
+            "inletSpeedMps": 2.1087
+          },
+          "S": {
+            "frequency": 0.032,
+            "derivedMeanSpeedMps": 4.9242,
+            "inletSpeedMps": 2.0824
+          },
+          "SSW": {
+            "frequency": 0.026,
+            "derivedMeanSpeedMps": 5.0,
+            "inletSpeedMps": 2.1144
+          },
+          "SW": {
+            "frequency": 0.011,
+            "derivedMeanSpeedMps": 3.4,
+            "inletSpeedMps": 1.4378
+          },
+          "WSW": {
+            "frequency": 0.004,
+            "derivedMeanSpeedMps": 1.5,
+            "inletSpeedMps": 0.6343
+          },
+          "W": {
+            "frequency": 0.007,
+            "derivedMeanSpeedMps": 1.1667,
+            "inletSpeedMps": 0.4934
+          },
+          "WNW": {
+            "frequency": 0.002,
+            "derivedMeanSpeedMps": 1.0,
+            "inletSpeedMps": 0.4229
+          },
+          "NW": {
+            "frequency": 0.004,
+            "derivedMeanSpeedMps": 1.5,
+            "inletSpeedMps": 0.6343
+          },
+          "NNW": {
+            "frequency": 0.009,
+            "derivedMeanSpeedMps": 3.0556,
+            "inletSpeedMps": 1.2922
+          }
+        }
+      },
+      "300": {
+        "fileUrl": "https://www.pland.gov.hk/pland_en/resources/site_wind/site_wind/table/winter/d_00273_lev300.txt",
+        "directions": {
+          "N": {
+            "frequency": 0.043,
+            "derivedMeanSpeedMps": 4.2805,
+            "inletSpeedMps": 1.8102
+          },
+          "NNE": {
+            "frequency": 0.231,
+            "derivedMeanSpeedMps": 6.7189,
+            "inletSpeedMps": 2.8414
+          },
+          "NE": {
+            "frequency": 0.204,
+            "derivedMeanSpeedMps": 5.6561,
+            "inletSpeedMps": 2.3919
+          },
+          "ENE": {
+            "frequency": 0.101,
+            "derivedMeanSpeedMps": 4.1139,
+            "inletSpeedMps": 1.7397
+          },
+          "E": {
+            "frequency": 0.14,
+            "derivedMeanSpeedMps": 4.0612,
+            "inletSpeedMps": 1.7174
+          },
+          "ESE": {
+            "frequency": 0.072,
+            "derivedMeanSpeedMps": 3.5556,
+            "inletSpeedMps": 1.5036
+          },
+          "SE": {
+            "frequency": 0.063,
+            "derivedMeanSpeedMps": 4.6746,
+            "inletSpeedMps": 1.9768
+          },
+          "SSE": {
+            "frequency": 0.04,
+            "derivedMeanSpeedMps": 4.4268,
+            "inletSpeedMps": 1.872
+          },
+          "S": {
+            "frequency": 0.019,
+            "derivedMeanSpeedMps": 2.8889,
+            "inletSpeedMps": 1.2217
+          },
+          "SSW": {
+            "frequency": 0.016,
+            "derivedMeanSpeedMps": 2.5,
+            "inletSpeedMps": 1.0572
+          },
+          "SW": {
+            "frequency": 0.01,
+            "derivedMeanSpeedMps": 2.1,
+            "inletSpeedMps": 0.8881
+          },
+          "WSW": {
+            "frequency": 0.008,
+            "derivedMeanSpeedMps": 2.0,
+            "inletSpeedMps": 0.8458
+          },
+          "W": {
+            "frequency": 0.01,
+            "derivedMeanSpeedMps": 1.5,
+            "inletSpeedMps": 0.6343
+          },
+          "WNW": {
+            "frequency": 0.009,
+            "derivedMeanSpeedMps": 1.75,
+            "inletSpeedMps": 0.7401
+          },
+          "NW": {
+            "frequency": 0.015,
+            "derivedMeanSpeedMps": 2.625,
+            "inletSpeedMps": 1.1101
+          },
+          "NNW": {
+            "frequency": 0.02,
+            "derivedMeanSpeedMps": 2.8158,
+            "inletSpeedMps": 1.1908
+          }
+        }
+      },
+      "200": {
+        "fileUrl": "https://www.pland.gov.hk/pland_en/resources/site_wind/site_wind/table/winter/d_00273_lev200.txt",
+        "directions": {
+          "N": {
+            "frequency": 0.044,
+            "derivedMeanSpeedMps": 4.0814,
+            "inletSpeedMps": 1.726
+          },
+          "NNE": {
+            "frequency": 0.245,
+            "derivedMeanSpeedMps": 6.651,
+            "inletSpeedMps": 2.8126
+          },
+          "NE": {
+            "frequency": 0.194,
+            "derivedMeanSpeedMps": 5.3814,
+            "inletSpeedMps": 2.2757
+          },
+          "ENE": {
+            "frequency": 0.098,
+            "derivedMeanSpeedMps": 4.0408,
+            "inletSpeedMps": 1.7088
+          },
+          "E": {
+            "frequency": 0.138,
+            "derivedMeanSpeedMps": 3.8869,
+            "inletSpeedMps": 1.6437
+          },
+          "ESE": {
+            "frequency": 0.071,
+            "derivedMeanSpeedMps": 3.4577,
+            "inletSpeedMps": 1.4622
+          },
+          "SE": {
+            "frequency": 0.063,
+            "derivedMeanSpeedMps": 4.8065,
+            "inletSpeedMps": 2.0326
+          },
+          "SSE": {
+            "frequency": 0.039,
+            "derivedMeanSpeedMps": 4.3205,
+            "inletSpeedMps": 1.8271
+          },
+          "S": {
+            "frequency": 0.018,
+            "derivedMeanSpeedMps": 3.0294,
+            "inletSpeedMps": 1.2811
+          },
+          "SSW": {
+            "frequency": 0.016,
+            "derivedMeanSpeedMps": 2.75,
+            "inletSpeedMps": 1.1629
+          },
+          "SW": {
+            "frequency": 0.01,
+            "derivedMeanSpeedMps": 1.9444,
+            "inletSpeedMps": 0.8223
+          },
+          "WSW": {
+            "frequency": 0.008,
+            "derivedMeanSpeedMps": 2.0,
+            "inletSpeedMps": 0.8458
+          },
+          "W": {
+            "frequency": 0.011,
+            "derivedMeanSpeedMps": 1.5,
+            "inletSpeedMps": 0.6343
+          },
+          "WNW": {
+            "frequency": 0.01,
+            "derivedMeanSpeedMps": 1.9444,
+            "inletSpeedMps": 0.8223
+          },
+          "NW": {
+            "frequency": 0.015,
+            "derivedMeanSpeedMps": 2.75,
+            "inletSpeedMps": 1.1629
+          },
+          "NNW": {
+            "frequency": 0.021,
+            "derivedMeanSpeedMps": 2.7,
+            "inletSpeedMps": 1.1418
+          }
+        }
+      }
+    }
+  },
+  "scaleNote": "Each bearing is solved at its annual 500 m inlet. Another table keeps those paths and multiplies the recorded speeds by the ratio of the two 10 m inlets. PlanD does not publish the 10 m speed."
+}

@@ -84,16 +84,39 @@ export interface SceneState {
    * scene store; the comparison panel writes it when a board arrives. A corridor
    * is map state, not a result the panel has to keep alive.
    */
-  windCorridor: { type: 'LineString'; coordinates: number[][] } | null
+  windCorridor: {
+    type: 'LineString'
+    coordinates: number[][]
+    properties?: {
+      geometricEffects?: { labels?: string[]; at: number[] }[]
+      sidecar?: { status?: string; method?: string; limitation?: string }
+    }
+  } | null
   windDiagnosticUrl: string | null
+  /** Meteorological FROM bearing. The OpenFOAM file for this name is the channel. */
+  windFrom: string
+  windSeason: 'annual' | 'summer' | 'winter'
+  windHeightM: 500 | 300 | 200
+  /** Selected-table inlet divided by the annual 500 m inlet. 1 when they match. */
+  windSpeedScale: number
   load: (sceneId: string) => Promise<void>
   setEnvParams: (patch: Partial<EnvParams>) => void
   run: (planIds: string[] | null) => Promise<void>
   toggleLayer: (layer: keyof LayerVisibility) => void
   setLayers: (layers: Partial<LayerVisibility>) => void
   setViewMode: (mode: ViewMode) => void
-  setWindCorridor: (corridor: { type: 'LineString'; coordinates: number[][] } | null) => void
+  setWindCorridor: (corridor: {
+    type: 'LineString'
+    coordinates: number[][]
+    properties?: {
+      geometricEffects?: { labels?: string[]; at: number[] }[]
+      sidecar?: { status?: string; method?: string; limitation?: string }
+    }
+  } | null) => void
   setWindDiagnosticUrl: (url: string | null) => void
+  setWindFrom: (direction: string) => void
+  setWindTable: (season: 'annual' | 'summer' | 'winter', heightM: 500 | 300 | 200) => void
+  setWindSpeedScale: (scale: number) => void
   clearError: () => void
   planProjectLoading: boolean
   setPlanProjectLoading: (v: boolean) => void
@@ -123,6 +146,10 @@ export const useSceneStore = create<SceneState>((set, get) => ({
   viewMode: 'tactical',
   windCorridor: null,
   windDiagnosticUrl: null,
+  windFrom: 'NE',
+  windSeason: 'annual',
+  windHeightM: 500,
+  windSpeedScale: 1,
   runResult: null,
   running: false,
   runError: null,
@@ -248,11 +275,21 @@ export const useSceneStore = create<SceneState>((set, get) => ({
     set((state) => ({
       windCorridor: corridor,
       layers: corridor
-        ? { ...state.layers, wind: true }
+        ? { ...state.layers, wind: true, massing25d: true }
         : state.layers,
     })),
 
   setWindDiagnosticUrl: (url) => set({ windDiagnosticUrl: url }),
+
+  setWindFrom: (direction) =>
+    set((state) => ({
+      windFrom: direction,
+      layers: { ...state.layers, wind: true, massing25d: true },
+    })),
+
+  setWindTable: (season, heightM) => set({ windSeason: season, windHeightM: heightM }),
+
+  setWindSpeedScale: (scale) => set({ windSpeedScale: Number.isFinite(scale) && scale > 0 ? scale : 1 }),
 
   clearError: () => set({ error: null }),
 }))

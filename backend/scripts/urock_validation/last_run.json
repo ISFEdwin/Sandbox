@@ -1,0 +1,28 @@
+{
+  "artefact": "urock-validation",
+  "status": "NOT_RUN",
+  "verified": false,
+  "method": "URock 2023a, one NE baseline and one proposed scheme, sampled at 1.5 m, speed ranking compared with the geometric corridor ranking. Offline only.",
+  "limitation": "Not executed in this environment. No speed ranking is reported. A missing solver is not a result, and this file does not estimate one. The screening corridor remains geometry, not a velocity ratio.",
+  "licence": "GPL-3.0",
+  "citation": "Bernard, Lindberg & Oswald, Geosci. Model Dev. 16, 5703\u20135727, 2023. doi:10.5194/gmd-16-5703-2023",
+  "repositories": [
+    "https://github.com/bbrangeo/urock_processing",
+    "https://github.com/UMEP-dev/UMEP"
+  ],
+  "prerequisite": "Python + Numba, Java >= 8, H2GIS, Jaydebeapi. The missing list is what this environment actually lacked. A present binary is not a completed solve.",
+  "sampleHeightM": 1.5,
+  "directions": [
+    "NE"
+  ],
+  "cases": [
+    "baseline",
+    "proposed"
+  ],
+  "retrieved": "2026-11-23",
+  "missing": [
+    "numba",
+    "jaydebeapi",
+    "urock"
+  ]
+}

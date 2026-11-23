@@ -1,0 +1,45 @@
+{
+  "artefact": "openfoam-wind-channel",
+  "status": "SOLVED",
+  "verified": true,
+  "method": "Steady incompressible RANS, simpleFoam, k-epsilon, on a Cartesian mesh. 2.5D footprint extrusions are removed with subsetMesh so the air flows around them. Streamlines are integrated on the solved velocity. The solve is not on the API request path.",
+  "limitation": "Coarse steady RANS on a flat ground. Vertical blockage is snapped to 8 m layers and the top layer is left open. The inlet is a uniform vector, not a measured profile. This is not a velocity ratio, not a Lawson / NEN / Davenport result, and not a pass/fail. OpenFOAM source is not in this repository.",
+  "licence": "GPL-3.0",
+  "image": "opencfd/openfoam-run:2512",
+  "sourceRepositories": [
+    "https://github.com/OpenFOAM/OpenFOAM-dev",
+    "https://develop.openfoam.com/Development/openfoam"
+  ],
+  "direction": "NE",
+  "retrieved": "2026-11-23",
+  "inletNote": "Each bearing is solved at its annual 500 m inlet. Another table keeps those paths and multiplies the recorded speeds by the ratio of the two 10 m inlets. PlanD does not publish the 10 m speed.",
+  "directions": {
+    "N": 51,
+    "NNE": 91,
+    "NE": 92,
+    "ENE": 93,
+    "E": 41,
+    "ESE": 94,
+    "SE": 94,
+    "SSE": 95,
+    "S": 56,
+    "SSW": 91,
+    "SW": 90,
+    "WSW": 91,
+    "W": 41,
+    "WNW": 88,
+    "NW": 88,
+    "NNW": 88
+  },
+  "mesh": {
+    "nx": 37,
+    "ny": 29,
+    "nz": 15,
+    "dxM": 20.023,
+    "dyM": 20.202,
+    "dzM": 8.0
+  },
+  "buildingCells": 1051,
+  "solvedSeason": "annual",
+  "solvedHeightM": 500
+}

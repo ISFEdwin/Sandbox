@@ -190,10 +190,33 @@ class Footprint:
     depth_m: float
     height_m: float
     bearing_deg: float = 0.0
+    # A declared ground-floor gap (empty bay / podium-free). It removes this
+    # footprint from the ground-level corridor term only. Total FAD still uses
+    # ``height_m``.
+    ground_floor_gap: bool = False
+    # Principal-axis side lengths for the projected-width formula. 0 means
+    # "use width_m / depth_m", which is exact when the ring is axis-aligned
+    # (those fields are then the east-west and north-south sides). A rotated
+    # ring keeps width_m / depth_m as the geographic bounding box the height
+    # raster stamps, and puts the unrotated sides here so the stamp does not
+    # move when the bearing does.
+    side_a_m: float = 0.0
+    side_b_m: float = 0.0
 
     @property
     def area_m2(self) -> float:
         return self.width_m * self.depth_m
+
+
+def formula_sides(footprint: Footprint) -> tuple[float, float]:
+    """The ``(a, b)`` pair :func:`projected_width_m` rotates by ``bearing_deg``.
+
+    ``side_a_m`` / ``side_b_m`` are set only for a ring whose edges are not
+    axis-aligned. Otherwise the geographic extents are the sides.
+    """
+    a = footprint.side_a_m if footprint.side_a_m > 0.0 else footprint.width_m
+    b = footprint.side_b_m if footprint.side_b_m > 0.0 else footprint.depth_m
+    return a, b
 
 
 def _metres_per_degree_lon(lat: float) -> float:
@@ -257,20 +280,103 @@ def footprints_from_geojson(features: list[dict[str, Any]]) -> list[Footprint]:
     """
     out: list[Footprint] = []
     for f in features:
+        props = f.get("properties") or {}
         ring = outer_ring(f.get("geometry"))
         height = 0.0
         try:
-            height = float((f.get("properties") or {}).get("height_m") or 0.0)
+            height = float(props.get("height_m") or 0.0)
         except (TypeError, ValueError):
             height = 0.0
-        fp = footprint_from_ring(ring, height)
+        raw_bearing = props.get("bearingDeg", props.get("bearing_deg"))
+        bearing_override: float | None = None
+        if raw_bearing not in (None, ""):
+            try:
+                bearing_override = float(raw_bearing)
+            except (TypeError, ValueError):
+                bearing_override = None
+        gap = bool(props.get("groundFloorGap", props.get("ground_floor_gap", False)))
+        fp = footprint_from_ring(
+            ring, height, bearing_deg=bearing_override, ground_floor_gap=gap)
         if fp is not None:
+            # The pipeline's record of the bearing, on the feature as well as
+            # the Footprint, so a later writer of this GeoJSON does not drop it.
+            if isinstance(props, dict):
+                props["bearingDeg"] = fp.bearing_deg
+                f["properties"] = props
             out.append(fp)
     return out
 
 
+# Edges within this of a cardinal are treated as axis-aligned. Surveyed rings
+# carry vertex noise; a few degrees is not a designed rotation. A real rotation
+# (a street grain at 20° or 30°) is well outside it.
+_AXIS_SNAP_DEG = 2.0
+
+
+def _edge_is_cardinal(clockwise_from_east_deg: float) -> bool:
+    """True when an undirected edge lies within the snap of east-west or north-south."""
+    folded = abs(clockwise_from_east_deg) % 180.0
+    to_ew = min(folded, 180.0 - folded)
+    to_ns = abs(folded - 90.0)
+    return min(to_ew, to_ns) <= _AXIS_SNAP_DEG
+
+
+def orientation_from_ring(pts: list[Any]) -> tuple[float, float, float, float, float]:
+    """``(width_m, depth_m, side_a_m, side_b_m, bearing_deg)`` for one ring.
+
+    ``width_m`` and ``depth_m`` are always the geographic east-west and
+    north-south extents. The height raster stamps those, and an axis-aligned
+    ring has used them as the projected-width sides since the metric was
+    written. Changing them would move the obstruction-height pin.
+
+    ``side_a_m`` / ``side_b_m`` / ``bearing_deg`` are the principal-axis
+    (longest-edge) frame. They are ``(0, 0, 0)`` when every edge is cardinal,
+    which means :func:`formula_sides` keeps using the geographic extents.
+    ``bearing_deg`` is the clockwise angle from east of side ``a``, the same
+    subtraction :func:`projected_width_m` performs.
+    """
+    lat = sum(p[1] for p in pts) / len(pts)
+    m_lon = _metres_per_degree_lon(lat)
+    width = (max(p[0] for p in pts) - min(p[0] for p in pts)) * m_lon
+    depth = (max(p[1] for p in pts) - min(p[1] for p in pts)) * M_PER_DEG_LAT
+    unique = pts[:-1] if len(pts) >= 2 and pts[0][:2] == pts[-1][:2] else pts
+    if len(unique) < 3:
+        return width, depth, 0.0, 0.0, 0.0
+    east = [(p[0] - unique[0][0]) * m_lon for p in unique]
+    north = [(p[1] - unique[0][1]) * M_PER_DEG_LAT for p in unique]
+    edges: list[tuple[float, float]] = []
+    n = len(unique)
+    for i in range(n):
+        j = (i + 1) % n
+        de = east[j] - east[i]
+        dn = north[j] - north[i]
+        length = math.hypot(de, dn)
+        if length < 1e-6:
+            continue
+        # Clockwise from +east. atan2(north, east) is counter-clockwise.
+        clockwise = math.degrees(math.atan2(-dn, de))
+        edges.append((length, clockwise))
+    if not edges or all(_edge_is_cardinal(ang) for _, ang in edges):
+        return width, depth, 0.0, 0.0, 0.0
+    _length, grain_signed = max(edges, key=lambda item: item[0])
+    grain = grain_signed % 180.0
+    rad = math.radians(grain)
+    # Unit along the edge, and the perpendicular, in (east, north).
+    ux, uy = math.cos(rad), -math.sin(rad)
+    vx, vy = uy, -ux
+    proj_u = [e * ux + n * uy for e, n in zip(east, north)]
+    proj_v = [e * vx + n * vy for e, n in zip(east, north)]
+    side_a = max(proj_u) - min(proj_u)
+    side_b = max(proj_v) - min(proj_v)
+    if side_a <= 1e-6 or side_b <= 1e-6:
+        return width, depth, 0.0, 0.0, 0.0
+    return width, depth, side_a, side_b, grain
+
+
 def footprint_from_ring(ring: list[Any] | None,
-                        height_m: float) -> Footprint | None:
+                        height_m: float,
+                        bearing_deg: float | None = None,
+                        ground_floor_gap: bool = False) -> Footprint | None:
     """One closed lon/lat ring -> a metric footprint, or None if unusable.
 
     The single conversion used by the city model loader, the AI placement path
@@ -288,11 +394,20 @@ def footprint_from_ring(ring: list[Any] | None,
     n = len(pts)
     lon = sum(xs[:-1]) / (n - 1)
     lat = sum(ys[:-1]) / (n - 1)
-    width = (max(xs) - min(xs)) * _metres_per_degree_lon(lat)
-    depth = (max(ys) - min(ys)) * M_PER_DEG_LAT
+    width, depth, side_a, side_b, derived = orientation_from_ring(pts)
     if width <= 0 or depth <= 0:
         return None
-    return Footprint(lon, lat, width, depth, float(height_m))
+    # An explicit bearing is the formula's θ. The sides stay the ones the ring
+    # produced: geographic extents when it is axis-aligned (side_a == 0), the
+    # principal-axis lengths otherwise.
+    bearing = derived if bearing_deg is None else float(bearing_deg) % 360.0
+    return Footprint(
+        lon, lat, width, depth, float(height_m),
+        bearing_deg=bearing,
+        ground_floor_gap=bool(ground_floor_gap),
+        side_a_m=side_a,
+        side_b_m=side_b,
+    )
 
 
 def _point_in_polygon(lon: float, lat: float, ring: list[list[float]]) -> bool:
@@ -473,6 +588,15 @@ def projected_width_m(west_east_m: float, north_south_m: float,
     not a route to a directionally-sensitive screen. See
     :func:`directional_exposure`, which marches rays over the height raster and is
     sensitive to the *arrangement* rather than to any one footprint.
+
+    **The formula is locked, including where a face-on reading disagrees with it.**
+    At θ = 0 a north wind (φ = 0) returns ``b`` (the north-south side) and an east
+    wind returns ``a``. A face-on silhouette of a long east-west slab would show
+    ``a`` to a north wind. The tests lock the expression as written
+    (``projected_width_m(100, 10, 0) < projected_width_m(100, 10, 90)``). Swapping
+    sine and cosine would move every frontal-area number, so it is not done.
+    Orientation still separates NE from E for a non-square footprint; it does not
+    separate NE from SW.
     """
     rel = math.radians(bearing_deg - footprint_bearing_deg)
     return (west_east_m * abs(math.sin(rel))
@@ -490,7 +614,7 @@ def frontal_area_density(
         return {"error": "site area must be positive"}
     per_dir: dict[str, float] = {}
     for name, bearing in dirs.items():
-        frontal = sum(projected_width_m(f.width_m, f.depth_m, bearing,
+        frontal = sum(projected_width_m(*formula_sides(f), bearing,
                                         f.bearing_deg) * f.height_m
                       for f in footprints)
         per_dir[name] = frontal / site_area_m2
@@ -1311,7 +1435,7 @@ def frontal_area_raster(footprints: list[Footprint], grids: Any,
         if ra >= rb or ca >= cb:
             continue
         n_cells = (rb - ra) * (cb - ca)
-        frontal = (projected_width_m(f.width_m, f.depth_m, bearing_deg,
+        frontal = (projected_width_m(*formula_sides(f), bearing_deg,
                                      f.bearing_deg) * f.height_m)
         per_cell = np.float32(frontal / n_cells)
         block = out[ra:rb, ca:cb]

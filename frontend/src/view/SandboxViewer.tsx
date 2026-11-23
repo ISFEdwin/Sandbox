@@ -41,6 +41,7 @@ import { add3DTileset, type TilesetHandle } from './tilesetLayer'
 import { hk1980ToEcefMatrix } from './hk1980Transform'
 import { addInterventions, type InterventionLayerHandle } from './interventionLayer'
 import { addCorridor, type CorridorHandle } from './corridorLayer'
+import { addOpenfoamStreamlines, type OpenfoamCollection } from './openfoamLayer'
 import { addProposals, type ProposalLayerHandle } from './proposalLayer'
 import { useSandboxStore } from '@/state/sandboxStore'
 import { publishHeading } from './cameraHeading'
@@ -169,6 +170,7 @@ function decodeOverlayImage(url: string): Promise<HTMLImageElement | null> {
   })
 }
 
+
 /**
  * Records why an overlay is not on screen, so the panel can say "failed" rather
  * than leaving a switch that silently does nothing.
@@ -263,6 +265,8 @@ export default function SandboxViewer({ className }: SandboxViewerProps = {}) {
   const corridorRef = useRef<CorridorHandle | null>(null)
 
   const windCorridor = useSceneStore((s) => s.windCorridor)
+  const windFrom = useSceneStore((s) => s.windFrom)
+  const windSpeedScale = useSceneStore((s) => s.windSpeedScale)
   const windDiagnosticUrl = useSceneStore((s) => s.windDiagnosticUrl)
 
   const bbox = useSceneStore((s) => s.scene?.bbox ?? null)
@@ -525,27 +529,70 @@ export default function SandboxViewer({ className }: SandboxViewerProps = {}) {
     boundaryRef.current = id.id
   }, [bbox, layers.boundary, viewMode])
 
-  // ---- prevailing-wind corridor -------------------------------------------
+  // ---- prevailing-wind channel -------------------------------------------
   //
-  // Geometry only. The line is rebuilt when the board returns a new corridor or
-  // the wind layer is toggled; the panel, not the viewer, owns the caveat.
+  // With the 2.5D massing on, the channel is the OpenFOAM streamline file if
+  // that solve has been written to disk. The geometric corridor is the
+  // fallback, and it stays the drawing in the textured 3D mode, because that
+  // mesh was not the obstacle field the solve used.
   useEffect(() => {
     const viewer = viewerRef.current
     if (!isLive(viewer)) return
 
     corridorRef.current?.dispose()
     corridorRef.current = null
-    if (!layers.wind || !windCorridor) {
+    if (!layers.wind) {
       viewer.scene.requestRender()
       return
     }
-    corridorRef.current = addCorridor(viewer, windCorridor)
+
+    let cancelled = false
+    const drawGeometric = () => {
+      if (cancelled || !isLive(viewerRef.current) || !windCorridor) return
+      corridorRef.current = addCorridor(viewerRef.current, windCorridor)
+    }
+
+    if (!showMassing25d) {
+      drawGeometric()
+      return () => {
+        cancelled = true
+        corridorRef.current?.dispose()
+        corridorRef.current = null
+      }
+    }
+
+    void (async () => {
+      await whenDemReady()
+      if (cancelled || !isLive(viewerRef.current)) return
+      try {
+        const response = await fetch(`/static/openfoam/streamlines/${windFrom}.geojson`)
+        if (!response.ok) {
+          drawGeometric()
+          return
+        }
+        const collection = (await response.json()) as OpenfoamCollection
+        if (cancelled || !isLive(viewerRef.current)) return
+        if (!collection.features?.length) {
+          drawGeometric()
+          return
+        }
+        corridorRef.current?.dispose()
+        corridorRef.current = addOpenfoamStreamlines(
+          viewerRef.current,
+          collection,
+          windSpeedScale,
+        )
+      } catch {
+        drawGeometric()
+      }
+    })()
 
     return () => {
+      cancelled = true
       corridorRef.current?.dispose()
       corridorRef.current = null
     }
-  }, [windCorridor, layers.wind])
+  }, [windCorridor, layers.wind, showMassing25d, windFrom, windSpeedScale])
 
   // ---- the view mode -----------------------------------------------------
   //
@@ -617,12 +664,13 @@ export default function SandboxViewer({ className }: SandboxViewerProps = {}) {
           const urlFor = url as string
           if (current && current.url === urlFor) continue
 
-          const image = await decodeOverlayImage(urlFor)
+          const decoded = await decodeOverlayImage(urlFor)
           if (cancelled) return
-          if (!image) {
+          if (!decoded) {
             setOverlayStatus(key, 'failed')
             continue
           }
+          const image = decoded
           const live = viewerRef.current
           if (!isLive(live)) return
           // The store is the truth, not the closure: the user may have switched

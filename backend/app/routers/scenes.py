@@ -873,33 +873,23 @@ def get_ventilation(scene_id: str) -> dict:
                     * math.cos(math.radians((lat0 + lat1) / 2))
                     * (lat1 - lat0) * 110_540.0)
 
-    def _exterior_points(geom: dict) -> list[tuple[float, float]]:
-        """All exterior-ring points, flat, for Polygon or MultiPolygon."""
-        coords = geom["coordinates"]
-        if geom["type"] == "Polygon":
-            rings = coords
-        elif geom["type"] == "MultiPolygon":
-            rings = [poly[0] for poly in coords]
-        else:
-            return []
-        pts: list[tuple[float, float]] = []
-        for ring in rings:
-            pts.extend((p[0], p[1]) for p in ring)
-        return pts
+    from app.services.design_metrics import footprints_from_geojson
 
-    footprints = []
-    for f in features:
-        pts = _exterior_points(f["geometry"])
-        if not pts:
-            continue
-        xs = [p[0] for p in pts]
-        ys = [p[1] for p in pts]
-        mid_lat = (min(ys) + max(ys)) / 2
-        footprints.append({
-            "widthM": (max(xs) - min(xs)) * 111_320.0 * math.cos(math.radians(mid_lat)),
-            "depthM": (max(ys) - min(ys)) * 110_540.0,
-            "heightM": float(f["properties"].get("height_m") or 0.0),
-        })
+    typed = footprints_from_geojson(features)
+    # Geographic width/depth stay the bounding box. sideAM/sideBM are the
+    # principal-axis sides the projected-width formula rotates. Passing the
+    # already-rotated sides as widthM would rotate them a second time.
+    footprints = [
+        {
+            "widthM": fp.width_m,
+            "depthM": fp.depth_m,
+            "heightM": fp.height_m,
+            "bearingDeg": fp.bearing_deg,
+            "sideAM": fp.side_a_m,
+            "sideBM": fp.side_b_m,
+        }
+        for fp in typed
+    ]
 
     reference = load_reference()
     wind = ((reference or {}).get("windRegime") or {})
@@ -930,10 +920,8 @@ def get_ventilation(scene_id: str) -> dict:
     # one, so it is not swallowed here.
     grids = load_grids()
     if grids is not None:
-        from app.services.design_metrics import footprints_from_geojson
         from app.services.ventilation import least_cost_corridors
 
-        typed = footprints_from_geojson(features)
         corridors = least_cost_corridors(typed, grids)
         result["corridors"] = corridors
         result["fadRatio"] = _corridor_fad_ratio(
@@ -946,10 +934,11 @@ def _corridor_fad_ratio(by_direction: dict, corridors: dict) -> dict:
 
     ``fad_ratio(baseline, scenario, direction)`` wants a baseline and a scenario.
     This endpoint holds one scheme, so the ratio reported is the corridor's own
-    mean per-cell FAD (the openest through-route, ``meanCost - 1``) against the
-    district's FAD for that direction: a value below 1 means the corridor is more
-    open than the district average along that wind. It is a comparison of two
-    FADs, never a velocity ratio, and carries ``fad_ratio``'s own status/warning.
+    mean per-cell FAD (``meanCellFad``; the ground and roughness terms are not
+    in it) against the district's FAD for that direction: a value below 1 means
+    the corridor is more open than the district average along that wind. It is
+    a comparison of two FADs, never a velocity ratio, and carries ``fad_ratio``'s
+    own status/warning.
     """
     from app.services.ventilation import fad_ratio
 
@@ -958,9 +947,13 @@ def _corridor_fad_ratio(by_direction: dict, corridors: dict) -> dict:
         baseline = by_direction.get(name)
         if baseline is None:
             continue
-        mean_cost = block.get("meanCost")
-        corridor_fad = max(0.0, float(mean_cost) - 1.0) if mean_cost is not None else 0.0
-        out[name] = fad_ratio(baseline, corridor_fad, name)
+        # meanCellFad is the path's frontal-area density. meanCost also carries
+        # the ground and roughness terms, so meanCost - 1 is no longer FAD.
+        mean_fad = block.get("meanCellFad")
+        if mean_fad is None:
+            mean_cost = block.get("meanCost")
+            mean_fad = max(0.0, float(mean_cost) - 1.0) if mean_cost is not None else 0.0
+        out[name] = fad_ratio(baseline, mean_fad, name)
     return out
 
 
@@ -1402,7 +1395,11 @@ def get_heat_field(scene_id: str, day_of_year: int = HEAT_SUMMER_DAY_OF_YEAR,
 
 
 @router.get("/scenes/{scene_id}/ventilation/corridors")
-def get_ventilation_corridors(scene_id: str, directions: str | None = None) -> dict:
+def get_ventilation_corridors(
+    scene_id: str,
+    directions: str | None = None,
+    directionWeights: str | None = None,  # noqa: N803
+) -> dict:
     """GET /api/scenes/{sceneId}/ventilation/corridors?directions=NE,SW
 
     The least-cost through-route across the frontal-area cost surface, per wind
@@ -1410,12 +1407,22 @@ def get_ventilation_corridors(scene_id: str, directions: str | None = None) -> d
 
     ``directions`` defaults to the eight principal directions; the wind-direction
     table is the canonical one in ``design_metrics`` (never re-derived here, which
-    is how NE and SW get swapped). The corridor is **geometry, not flow**: it is
-    not a measured wind speed and FAD is not a velocity ratio, which the response
-    states.
+    is how NE and SW get swapped). All 16 names in that table are accepted as
+    weights. Only the eight with a travel vector are marched. The corridor is
+    **geometry, not flow**: it is not a measured wind speed and FAD is not a
+    velocity ratio, which the response states.
+
+    ``directionWeights`` selects the headline corridor. Omitted, the selection
+    is the AVRG73 combined NE/ENE/E fact, which is not split into per-direction
+    frequencies. ``site`` uses the verified PlanD annual 500 m occurrences.
+    ``NE:0.2,E:0.1`` is an explicit selection. Weights never enter the cell cost.
     """
     from app.services.design_metrics import CARDINALS, footprints_from_geojson
-    from app.services.ventilation import PRINCIPAL_DIRECTIONS, least_cost_corridors
+    from app.services.ventilation import (
+        PRINCIPAL_DIRECTIONS,
+        least_cost_corridors,
+        site_direction_frequencies,
+    )
 
     scene_service.get_scene(scene_id)
     grids = _require_grids()
@@ -1432,9 +1439,49 @@ def get_ventilation_corridors(scene_id: str, directions: str | None = None) -> d
                 detail=f"unknown wind direction(s) {unknown}; known are {sorted(CARDINALS)}")
         requested = {n: CARDINALS[n] for n in names}
 
+    weights: dict[str, float] | None = None
+    weight_source = "AVRG73"
+    raw_weights = (directionWeights or "").strip()
+    if raw_weights:
+        if raw_weights.lower() == "site":
+            try:
+                weights = site_direction_frequencies()
+            except ValueError as e:
+                raise HTTPException(status_code=422, detail=str(e)) from e
+            weight_source = "PlanD site wind, annual, 500 m"
+        else:
+            weights = {}
+            for part in raw_weights.split(","):
+                if ":" not in part:
+                    raise HTTPException(
+                        status_code=422,
+                        detail=f"directionWeights entries are NAME:weight, got {part!r}")
+                key, _, value = part.partition(":")
+                key = key.strip().upper()
+                if key not in CARDINALS:
+                    raise HTTPException(
+                        status_code=422,
+                        detail=f"unknown wind direction {key!r}; known are {sorted(CARDINALS)}")
+                try:
+                    number = float(value)
+                except ValueError as e:
+                    raise HTTPException(
+                        status_code=422,
+                        detail=f"weight for {key} is not a number") from e
+                if number < 0.0:
+                    raise HTTPException(
+                        status_code=422,
+                        detail=f"weight for {key} must be >= 0")
+                weights[key] = number
+            if not weights:
+                raise HTTPException(status_code=422, detail="directionWeights was empty")
+            weight_source = "request"
+
     typed = footprints_from_geojson(features)
     try:
-        result = least_cost_corridors(typed, grids, directions=requested)
+        result = least_cost_corridors(
+            typed, grids, directions=requested,
+            direction_weights=weights, weight_source=weight_source)
     except ValueError as e:
         # e.g. a 16-point name (ENE) that has no travel vector in the canonical
         # table -- refused rather than approximated.

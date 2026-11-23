@@ -87,14 +87,21 @@ def _cell_center(grids: Grids, row: int, col: int) -> list[float]:
     return [round(float(lon), 6), round(float(lat), 6)]
 
 
-def _path_geometry(grids: Grids, path: list[list[int]]) -> dict[str, Any] | None:
+def _path_geometry(
+    grids: Grids,
+    path: list[list[int]],
+    properties: dict[str, Any] | None = None,
+) -> dict[str, Any] | None:
     """A corridor's cell path as a GeoJSON LineString, or None if too short."""
     if len(path) < 2:
         return None
-    return {
+    line: dict[str, Any] = {
         "type": "LineString",
         "coordinates": [_cell_center(grids, int(r), int(c)) for r, c in path],
     }
+    if properties:
+        line["properties"] = properties
+    return line
 
 
 def _scheme_metrics(
@@ -175,13 +182,32 @@ def _wind_metrics(
     terms use, so the corridor and the heat field read one massing description.
     """
     from app.services.run_service import _massing_overrides
-    from app.services.design_metrics import footprint_from_ring
+    from app.services.design_metrics import (
+        CARDINALS,
+        footprint_from_ring,
+        frontal_area_density,
+    )
+    from app.services.ventilation import fad_ratio
 
     scheme_footprints = list(footprints)
     for override in _massing_overrides(features):
         fp = footprint_from_ring(override.get("ring"), override.get("heightM") or 0)
         if fp is not None:
             scheme_footprints.append(fp)
+
+    site = float(grids.rows * grids.cols) * float(grids.cell_area_m2)
+    baseline_fad = frontal_area_density(footprints, site, CARDINALS)
+    scenario_fad = frontal_area_density(scheme_footprints, site, CARDINALS)
+    fad_by_direction = {
+        name: fad_ratio(
+            baseline_fad["byDirection"][name],
+            scenario_fad["byDirection"][name],
+            name,
+        )
+        for name in CARDINALS
+        if name in baseline_fad.get("byDirection", {})
+        and name in scenario_fad.get("byDirection", {})
+    }
 
     try:
         result = least_cost_corridors(
@@ -192,6 +218,7 @@ def _wind_metrics(
             "reason": str(exc),
             "directions": {},
             "corridor": None,
+            "fadRatioByDirection": fad_by_direction,
         }
 
     directions = result.get("directions") or {}
@@ -207,6 +234,15 @@ def _wind_metrics(
     headline = ne.get("firstObstructionMeanM")
     if headline is None and heights:
         headline = round(float(np.mean(heights)), 2)
+    effect_sidecar = result.get("geometricEffectSidecar") or {}
+    placed = []
+    for tag in ne.get("geometricEffects") or []:
+        lon, lat = _cell_center(grids, int(tag["row"]), int(tag["col"]))
+        placed.append({"labels": list(tag.get("labels") or []), "at": [lon, lat]})
+    corridor = _path_geometry(grids, ne.get("path") or [], {
+        "geometricEffects": placed,
+        "sidecar": effect_sidecar,
+    })
     return {
         "status": "WIND_CORRIDOR_GEOMETRY",
         "directions": {
@@ -227,8 +263,11 @@ def _wind_metrics(
         # The NE corridor is the one drawn on the map: it is the published
         # prevailing direction and it is the walk the district reads as the
         # channel. E is reported beside it.
-        "corridor": _path_geometry(grids, ne.get("path") or []),
+        "corridor": corridor,
         "corridorDirection": "NE",
+        "fadRatioByDirection": fad_by_direction,
+        "terms": result.get("terms"),
+        "directionWeights": result.get("directionWeights"),
         "warning": result.get("warning"),
         "limitation": result.get("limitation"),
     }

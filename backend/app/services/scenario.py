@@ -172,6 +172,26 @@ def _region_fraction(scope: str | None) -> tuple[float, float, float, float]:
     return table[key]
 
 
+def _carry(footprint: Footprint, **changes: Any) -> Footprint:
+    """A new footprint that keeps bearing, gap and principal-axis sides.
+
+    Every massing rebuild goes through here. A hand-written ``Footprint(...)``
+    that lists only the fields it changes resets the others to the dataclass
+    defaults, which is how a rotate used to be erased by the next scale.
+    """
+    return Footprint(
+        lon=changes.get("lon", footprint.lon),
+        lat=changes.get("lat", footprint.lat),
+        width_m=changes.get("width_m", footprint.width_m),
+        depth_m=changes.get("depth_m", footprint.depth_m),
+        height_m=changes.get("height_m", footprint.height_m),
+        bearing_deg=changes.get("bearing_deg", footprint.bearing_deg),
+        ground_floor_gap=changes.get("ground_floor_gap", footprint.ground_floor_gap),
+        side_a_m=changes.get("side_a_m", footprint.side_a_m),
+        side_b_m=changes.get("side_b_m", footprint.side_b_m),
+    )
+
+
 def apply_massing(
     footprints: list[Footprint],
     ops: list[MassingOp],
@@ -221,16 +241,13 @@ def apply_massing(
             # unrotated -- a plausible wrong number, and the geometry in
             # frontal_area_raster / cell_fad reads exactly this field. Only
             # `rotate` may ever change the bearing.
-            out = [Footprint(f.lon, f.lat, f.width_m, f.depth_m, f.height_m * m,
-                             bearing_deg=f.bearing_deg)
+            out = [_carry(f, height_m=f.height_m * m)
                    if i in set(idx) else f for i, f in enumerate(out)]
         elif op.op == "set_site":
             out = [
-                Footprint(f.lon, f.lat, f.width_m, f.depth_m,
-                          (max(1.0, f.height_m + float(op.delta_m))
-                           if op.delta_m is not None
-                           else float(op.height_m or f.height_m)),
-                          bearing_deg=f.bearing_deg)
+                _carry(f, height_m=(max(1.0, f.height_m + float(op.delta_m))
+                                    if op.delta_m is not None
+                                    else float(op.height_m or f.height_m)))
                 if i in set(idx) else f
                 for i, f in enumerate(out)
             ]
@@ -244,11 +261,9 @@ def apply_massing(
                 # raised frontal area, so the screen reported a *worse* wind outcome
                 # for a scheme whose orientation had actually improved it.
                 targets = set(idx)
-                out = [Footprint(
-                    f.lon, f.lat, f.width_m, f.depth_m, f.height_m,
-                    bearing_deg=(f.bearing_deg + deg) % 360.0)
-                    if i in targets else f
-                    for i, f in enumerate(out)]
+                out = [_carry(f, bearing_deg=(f.bearing_deg + deg) % 360.0)
+                       if i in targets else f
+                       for i, f in enumerate(out)]
         elif op.op == "move":
             # Two modes: a metric offset (dx/dy) or a direct target coordinate.
             # The coordinate is validated against the study-area bounds -- it is
@@ -265,8 +280,7 @@ def apply_massing(
                     continue
                 targets = set(idx)
                 out = [
-                    Footprint(tlx, tly, f.width_m, f.depth_m, f.height_m,
-                              bearing_deg=f.bearing_deg)
+                    _carry(f, lon=tlx, lat=tly)
                     if i in targets else f
                     for i, f in enumerate(out)
                 ]
@@ -281,11 +295,10 @@ def apply_massing(
                     # a move is metric while the degree scale shrinks with latitude.
                     targets = set(idx)
                     out = [
-                        Footprint(
-                            f.lon + dx / (111_320.0 * math.cos(math.radians(f.lat))),
-                            f.lat + dy / 110_540.0,
-                            f.width_m, f.depth_m, f.height_m,
-                            bearing_deg=f.bearing_deg,
+                        _carry(
+                            f,
+                            lon=f.lon + dx / (111_320.0 * math.cos(math.radians(f.lat))),
+                            lat=f.lat + dy / 110_540.0,
                         ) if i in targets else f
                         for i, f in enumerate(out)
                     ]
@@ -302,11 +315,13 @@ def apply_massing(
             if abs(ws - 1.0) > 1e-9 or abs(ds - 1.0) > 1e-9:
                 targets = set(idx)
                 out = [
-                    Footprint(f.lon, f.lat,
-                              max(1.0, f.width_m * ws),
-                              max(1.0, f.depth_m * ds),
-                              f.height_m,
-                              bearing_deg=f.bearing_deg)
+                    _carry(
+                        f,
+                        width_m=max(1.0, f.width_m * ws),
+                        depth_m=max(1.0, f.depth_m * ds),
+                        side_a_m=(f.side_a_m * ws if f.side_a_m > 0.0 else 0.0),
+                        side_b_m=(f.side_b_m * ds if f.side_b_m > 0.0 else 0.0),
+                    )
                     if i in targets else f
                     for i, f in enumerate(out)
                 ]

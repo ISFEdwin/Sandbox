@@ -48,6 +48,10 @@ const reset = () => {
       massing25d: false,
     },
     viewMode: 'survey',
+    windFrom: 'NE',
+    windSeason: 'annual',
+    windHeightM: 500,
+    windSpeedScale: 1,
   })
 }
 
@@ -78,6 +82,25 @@ describe('layer toggles', () => {
     expect(layers.heatmap).toBe(true)
     expect(layers.interventions).toBe(true)
     expect(layers.boundary).toBe(true)
+  })
+})
+
+describe('wind bearing', () => {
+  beforeEach(reset)
+
+  it('selecting a from-direction shows the 2.5D channel', () => {
+    useSceneStore.getState().setWindFrom('SW')
+    const state = useSceneStore.getState()
+    expect(state.windFrom).toBe('SW')
+    expect(state.layers.wind).toBe(true)
+    expect(state.layers.massing25d).toBe(true)
+  })
+
+  it('keeps a positive speed scale', () => {
+    useSceneStore.getState().setWindSpeedScale(1.4)
+    expect(useSceneStore.getState().windSpeedScale).toBeCloseTo(1.4)
+    useSceneStore.getState().setWindSpeedScale(0)
+    expect(useSceneStore.getState().windSpeedScale).toBe(1)
   })
 })
 

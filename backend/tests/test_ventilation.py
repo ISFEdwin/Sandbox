@@ -35,6 +35,8 @@ from app.services.ventilation import (  # noqa: E402
     CARDINALS,
     fad_ratio,
     frontal_area_density,
+    geometric_effects,
+    ground_level_fad,
     least_cost_corridors,
     load_reference,
     projected_width_m,
@@ -123,7 +125,8 @@ def main() -> int:
     model = BACKEND_DIR / "data" / "rasters" / "buildings_hsk.json"
     features = json.loads(model.read_text())["features"]
     fps = [
-        {"widthM": fp.width_m, "depthM": fp.depth_m, "heightM": fp.height_m}
+        {"widthM": fp.width_m, "depthM": fp.depth_m, "heightM": fp.height_m,
+         "bearingDeg": fp.bearing_deg, "sideAM": fp.side_a_m, "sideBM": fp.side_b_m}
         for fp in footprints_from_geojson(features)
     ]
     out = ventilation_screening(fps, 7_865_000.0,
@@ -307,8 +310,91 @@ def main() -> int:
           zero["status"] == "RELATIVE_COMPARISON_NOT_A_VELOCITY_RATIO"
           and "A ratio is a comparison" in zero["warning"], "")
 
+    default_weights = least_cost_corridors(
+        [Footprint(2.0, 2.0, 10.0, 10.0, 20.0)], sg, directions={"NE": 45.0, "E": 90.0},
+    )["directionWeights"]
+    check("the default weight is the AVRG73 group, not a split rose",
+          default_weights["source"] == "AVRG73"
+          and default_weights["perDirection"] is None
+          and default_weights["combinedFrequencyPercent"] == 40.8
+          and default_weights["selectedDirection"] == "NE"
+          and len(default_weights["canonicalDirections"]) == 16,
+          str(default_weights.get("perDirection")))
+    picked = least_cost_corridors(
+        [Footprint(2.0, 2.0, 10.0, 10.0, 20.0)], sg,
+        directions={"NE": 45.0, "E": 90.0},
+        direction_weights={"E": 0.9, "NE": 0.1},
+        weight_source="request",
+    )
+    check("explicit weights select the headline and do not enter the cost",
+          picked["directionWeights"]["selectedDirection"] == "E"
+          and picked["directionWeights"]["status"] == "DIRECTION_WEIGHT_NOT_A_COST",
+          str(picked["directionWeights"]["selectedDirection"]))
+    solid = ground_level_fad([Footprint(2.0, 2.0, 10.0, 10.0, 30.0)], sg, 0.0)
+    opened = ground_level_fad(
+        [Footprint(2.0, 2.0, 10.0, 10.0, 30.0, ground_floor_gap=True)], sg, 0.0)
+    full_solid = cell_fad([Footprint(2.0, 2.0, 10.0, 10.0, 30.0)], sg, 0.0)
+    full_open = cell_fad(
+        [Footprint(2.0, 2.0, 10.0, 10.0, 30.0, ground_floor_gap=True)], sg, 0.0)
+    check("a ground-floor gap removes the ground term and not total FAD",
+          float(solid.max()) > 0.0 and float(opened.max()) == 0.0
+          and np.array_equal(full_solid, full_open),
+          f"ground {float(solid.max()):.4f} -> {float(opened.max()):.4f}")
+    for term in picked["terms"].values():
+        if not {"status", "method", "limitation"} <= set(term):
+            check("each cost term has its own sidecar", False, str(term))
+            break
+    else:
+        check("each cost term has its own sidecar", True, "")
+    effects = geometric_effects([[1, 0], [2, 0]], np.array([
+        [0, 0, 20],
+        [30, 0, 20],
+        [0, 0, 0],
+    ], dtype=np.float32), "S")
+    labels = {label for item in effects for label in item["labels"]}
+    check("effect tags name geometry and carry no speed",
+          "downwash risk" in labels
+          and all("speed" not in item and "velocity" not in item for item in effects),
+          str(labels))
+
     print(f"\n{PASSED}/{PASSED + FAILED} passed")
     return 1 if FAILED else 0
+
+
+def test_default_weights_do_not_split_the_avrg73_fact() -> None:
+    class _Grid:
+        rows = 4
+        cols = 4
+        cell_area_m2 = 25.0
+
+        def cell_of(self, lon, lat):
+            return int(lat), int(lon)
+
+    block = least_cost_corridors(
+        [Footprint(1.0, 1.0, 8.0, 8.0, 12.0)], _Grid(),
+        directions={"NE": 45.0, "E": 90.0},
+    )["directionWeights"]
+    assert block["perDirection"] is None
+    assert block["combinedFrequencyPercent"] == 40.8
+    assert block["selectedDirection"] == "NE"
+    assert len(block["canonicalDirections"]) == 16
+
+
+def test_ground_floor_gap_does_not_change_total_fad() -> None:
+    class _Grid:
+        rows = 5
+        cols = 5
+        cell_area_m2 = 25.0
+
+        def cell_of(self, lon, lat):
+            return int(lat), int(lon)
+
+    grid = _Grid()
+    solid = Footprint(2.0, 2.0, 10.0, 10.0, 30.0)
+    gap = Footprint(2.0, 2.0, 10.0, 10.0, 30.0, ground_floor_gap=True)
+    assert float(ground_level_fad([solid], grid, 0.0).max()) > 0.0
+    assert float(ground_level_fad([gap], grid, 0.0).max()) == 0.0
+    assert np.array_equal(cell_fad([solid], grid, 0.0), cell_fad([gap], grid, 0.0))
 
 
 if __name__ == "__main__":

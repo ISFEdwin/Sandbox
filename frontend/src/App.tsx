@@ -36,6 +36,7 @@ import GovernmentFitPanel from './components/GovernmentFitPanel'
 import ParameterCardPanel from './components/ParameterCardPanel'
 import InterventionsPanel from './components/InterventionsPanel'
 import ViewButtons from './components/ViewButtons'
+import WindCompass from './components/WindCompass'
 import { usePlanStore } from './state/planStore'
 import { useSceneStore } from './state/sceneStore'
 import SandboxViewer, { setPanelInsetLeft } from './view/SandboxViewer'
@@ -74,7 +75,11 @@ function LayerToggles() {
         size="small"
         variant={layers.wind ? 'contained' : 'outlined'}
         disabled={!hasWind}
-        onClick={() => toggleLayer('wind')}
+        onClick={() => {
+          const next = !layers.wind
+          toggleLayer('wind')
+          if (next) setLayers({ massing25d: true })
+        }}
         sx={{ minWidth: 0, px: 1, py: 0.4, fontSize: 10, lineHeight: 1 }}
       >
         Wind
@@ -193,6 +198,7 @@ export default function App() {
             When the chat panel is open it shifts right of it, so it never covers
             the chat input box at the panel's bottom. */}
         <InterventionLegend offsetLeft={chatOpen ? CHAT_WIDTH + 12 : 12} />
+        <WindCompass offsetLeft={chatOpen ? CHAT_WIDTH + 16 : 16} />
 
         {/* Top-left: brand block + chat toggle */}
         <Box sx={{ position: 'absolute', top: 12, left: chatOpen ? CHAT_WIDTH + 12 : 12, zIndex: 1300, transition: 'left 0.2s' }}>

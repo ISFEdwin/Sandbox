@@ -163,6 +163,15 @@ def test_wind_corridor_is_geometry_with_a_line_on_the_map() -> None:
     assert corridor and corridor["type"] == "LineString"
     assert len(corridor["coordinates"]) >= 2
     assert "not a velocity ratio" in (wind.get("warning") or "").lower()
+    ratio = (wind.get("fadRatioByDirection") or {}).get("NE") or {}
+    assert ratio.get("status") == "RELATIVE_COMPARISON_NOT_A_VELOCITY_RATIO"
+    sidecar = (corridor.get("properties") or {}).get("sidecar") or {}
+    for key in ("status", "method", "limitation"):
+        assert sidecar.get(key), key
+    assert "not speed" in sidecar["limitation"].lower()
+    for term in (wind.get("terms") or {}).values():
+        for key in ("status", "method", "limitation"):
+            assert term.get(key), key
 
 
 def test_sensitivity_moves_the_ledger_with_rainfall() -> None:

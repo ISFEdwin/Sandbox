@@ -35,8 +35,17 @@ export interface ComparisonWind {
   directions: Record<string, ComparisonWindDirection>
   /** Headline first-obstruction height (NE), in metres. */
   firstObstructionMeanM: number | null
-  corridor: { type: 'LineString'; coordinates: number[][] } | null
+  corridor: {
+    type: 'LineString'
+    coordinates: number[][]
+    properties?: {
+      geometricEffects?: { labels?: string[]; at: number[] }[]
+      sidecar?: { status?: string; method?: string; limitation?: string }
+    }
+  } | null
   corridorDirection?: string
+  /** scenario FAD / baseline FAD per canonical direction. A comparison, not a VR. */
+  fadRatioByDirection?: Record<string, { direction: string; ratio: number | null; status: string; warning?: string }>
   warning?: string
   limitation?: string
   reason?: string

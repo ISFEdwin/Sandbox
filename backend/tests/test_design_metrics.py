@@ -27,6 +27,7 @@ from app.services.design_metrics import (  # noqa: E402
     VR_OPEN_SPACE,
     Footprint,
     design_report,
+    footprint_from_ring,
     footprints_from_geojson,
     frontal_area_density,
     ground_level_void_fraction,
@@ -604,7 +605,7 @@ def main() -> int:
     # This is the assertion that catches a wrong denominator (site area instead
     # of cell area) or a footprint stamped at full value on every cell it covers
     # rather than spread. Both leave a plausible-looking cost surface.
-    from app.services.design_metrics import cell_fad
+    from app.services.design_metrics import cell_fad, formula_sides
 
     class _SynthGrid:
         rows = 60
@@ -618,13 +619,17 @@ def main() -> int:
     site = sg.rows * sg.cols * sg.cell_area_m2
     synth = [Footprint(10.0, 10.0, 10.0, 10.0, 20.0),
              Footprint(30.0, 30.0, 10.0, 10.0, 40.0),
-             Footprint(45.0, 15.0, 20.0, 10.0, 15.0)]
+             Footprint(45.0, 15.0, 20.0, 10.0, 15.0),
+             # Oriented sides, geographic stamp unchanged. The identity is the
+             # oriented frontal area, not the bounding-box sides.
+             Footprint(50.0, 40.0, 18.0, 14.0, 12.0, bearing_deg=30.0,
+                       side_a_m=16.0, side_b_m=8.0)]
     worst_rel, worst_abs = 0.0, 0.0
     for name, bearing in (("N", 0.0), ("NE", 45.0), ("E", 90.0), ("SE", 135.0),
                           ("S", 180.0), ("SW", 225.0), ("W", 270.0), ("NW", 315.0)):
         fad_raster = cell_fad(synth, sg, bearing)
         lhs = float((fad_raster * sg.cell_area_m2).sum() / site)
-        raw = sum(projected_width_m(f.width_m, f.depth_m, bearing,
+        raw = sum(projected_width_m(*formula_sides(f), bearing,
                                     f.bearing_deg) * f.height_m
                   for f in synth) / site
         worst_rel = max(worst_rel, abs(lhs - raw) / max(raw, 1e-12))
@@ -674,8 +679,69 @@ def main() -> int:
           int((aabb_mask & ~exact_mask).sum()) > 0,
           f"{int((aabb_mask & ~exact_mask).sum())} cells")
 
+    # Oriented FAD is 180-degree periodic. NE ≡ SW is expected. NE ≠ E is the
+    # non-cardinal split orientation actually provides.
+    turned = [Footprint(114.0, 22.44, 40.0, 12.0, 30.0, bearing_deg=20.0)]
+    turned_fad = frontal_area_density(turned, 10_000.0)
+    check("oriented FAD keeps NE ≡ SW (neSwDifference is 0)",
+          turned_fad["neSwDifference"] == 0.0,
+          f"difference {turned_fad['neSwDifference']}")
+    check("and orientation separates NE from E",
+          turned_fad["byDirection"]["NE"] != turned_fad["byDirection"]["E"],
+          f"NE {turned_fad['byDirection']['NE']} E {turned_fad['byDirection']['E']}")
+    aligned = footprint_from_ring(
+        [[114.0, 22.40], [114.0004, 22.40], [114.0004, 22.4002],
+         [114.0, 22.4002], [114.0, 22.40]],
+        10.0,
+    )
+    check("an axis-aligned ring stores bearing 0",
+          aligned is not None and aligned.bearing_deg == 0.0 and aligned.side_a_m == 0.0,
+          "" if aligned is None else f"bearing {aligned.bearing_deg}")
+    import math as _math
+    centre_lon, centre_lat = 114.0, 22.44
+    m_lon = 111_320.0 * _math.cos(_math.radians(centre_lat))
+    grain = _math.radians(30.0)
+    ux, uy = _math.cos(grain), -_math.sin(grain)
+    vx, vy = uy, -ux
+    ring = []
+    for sa, sb in ((1, 1), (1, -1), (-1, -1), (-1, 1), (1, 1)):
+        east = sa * 20.0 * ux + sb * 5.0 * vx
+        north = sa * 20.0 * uy + sb * 5.0 * vy
+        ring.append([centre_lon + east / m_lon, centre_lat + north / 110_540.0])
+    rotated = footprint_from_ring(ring, 12.0)
+    check("a 30° ring stores that bearing and its true sides",
+          rotated is not None
+          and abs(rotated.bearing_deg - 30.0) < 1.0
+          and abs(rotated.side_a_m - 40.0) < 1.0
+          and abs(rotated.side_b_m - 10.0) < 1.0,
+          "" if rotated is None else (
+              f"bearing {rotated.bearing_deg:.2f} sides "
+              f"{rotated.side_a_m:.2f} x {rotated.side_b_m:.2f}"))
+
     print(f"\n{PASSED}/{PASSED + FAILED} passed")
     return 1 if FAILED else 0
+
+
+def test_oriented_fad_keeps_ne_equal_sw_and_splits_ne_from_e() -> None:
+    """NE ≡ SW is the locked geometry. NE ≠ E is what orientation changes."""
+    turned = frontal_area_density(
+        [Footprint(114.0, 22.44, 40.0, 12.0, 30.0, bearing_deg=20.0)],
+        10_000.0,
+    )
+    assert turned["neSwDifference"] == 0.0
+    assert turned["byDirection"]["NE"] != turned["byDirection"]["E"]
+
+
+def test_directional_exposure_distinguishes_ne_from_sw() -> None:
+    import numpy as np
+    from app.services.design_metrics import directional_exposure
+
+    height = np.zeros((6, 6), dtype=np.float32)
+    height[0, 5] = 50.0
+    height[5, 0] = 10.0
+    out = directional_exposure(height)
+    assert out["NE"]["meanFirstHitHeightM"] != out["SW"]["meanFirstHitHeightM"]
+    assert out["symmetryBroken"] is True
 
 
 if __name__ == "__main__":

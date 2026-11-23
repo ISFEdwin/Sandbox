@@ -6023,7 +6023,7 @@
     },
     "/api/scenes/{scene_id}/ventilation/corridors": {
       "get": {
-        "description": "GET /api/scenes/{sceneId}/ventilation/corridors?directions=NE,SW\n\nThe least-cost through-route across the frontal-area cost surface, per wind\ndirection -- the openest path the wind can take, computed from the geometry.\n\n``directions`` defaults to the eight principal directions; the wind-direction\ntable is the canonical one in ``design_metrics`` (never re-derived here, which\nis how NE and SW get swapped). The corridor is **geometry, not flow**: it is\nnot a measured wind speed and FAD is not a velocity ratio, which the response\nstates.",
+        "description": "GET /api/scenes/{sceneId}/ventilation/corridors?directions=NE,SW\n\nThe least-cost through-route across the frontal-area cost surface, per wind\ndirection -- the openest path the wind can take, computed from the geometry.\n\n``directions`` defaults to the eight principal directions; the wind-direction\ntable is the canonical one in ``design_metrics`` (never re-derived here, which\nis how NE and SW get swapped). All 16 names in that table are accepted as\nweights. Only the eight with a travel vector are marched. The corridor is\n**geometry, not flow**: it is not a measured wind speed and FAD is not a\nvelocity ratio, which the response states.\n\n``directionWeights`` selects the headline corridor. Omitted, the selection\nis the AVRG73 combined NE/ENE/E fact, which is not split into per-direction\nfrequencies. ``site`` uses the verified PlanD annual 500 m occurrences.\n``NE:0.2,E:0.1`` is an explicit selection. Weights never enter the cell cost.",
         "operationId": "get_ventilation_corridors_api_scenes__scene_id__ventilation_corridors_get",
         "parameters": [
           {
@@ -6049,6 +6049,22 @@
                 }
               ],
               "title": "Directions"
+            }
+          },
+          {
+            "in": "query",
+            "name": "directionWeights",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Directionweights"
             }
           }
         ],

@@ -120,6 +120,10 @@ Two months of engineering that is invisible in a demo and decisive in a pilot.
 - [ ] **B11 `[P2]` Wind as a geometry axis.** Currently partial; needed before any AVA-style claim is made.
       *Note:* the wind docstrings said two things that were not true and now do (396 surveyed footprints, and the
       symmetry being the metric's rather than the buildings'). Fixed 14 Nov 2026; the axis itself is still partial.
+      23 Nov 2026: footprint bearing and principal-axis sides feed the projected width; NE ≡ SW in FAD stays, because
+      the closed form is 180-degree periodic. NE ≠ SW is the directional-exposure march and the shelter rays. Corridor
+      cost is still `1 + cellFAD`, plus a separate ground-level term and a separate land-class roughness penalty.
+      Geometric effect labels are patterns, not speeds. No velocity ratio and no pass/fail.
 
 - [ ] **B12 `[P2]` Paid or local model id for the LLM path.** Rate limits in a paying session are a churn event.
 
@@ -159,10 +163,14 @@ Two months of engineering that is invisible in a demo and decisive in a pilot.
 - [x] **D5 `[P0]` Which storm is the baseline design storm?** **Settled 14 Nov 2026: 50 mm.** The committed raster set
       is regenerated at it and `tests/test_artefact_drift.py` fails if the two ever disagree. The storm is now a
       *stated input* of every published figure, not an ambient default.
-- [ ] **D5′ `[P2]` The site wind regime.** The build plan's Wave 0 also asks for CSDI's "Site Wind Availability Data"
-      into `backend/data/reference/hsk_site_wind.json`, replacing AVRG73's single wind-rose fact with the government's
-      published site wind regime. **Not started:** it needs a fetch from the CSDI portal, which is a separate piece of
-      work from anything in this repository.
+- [x] **D5′ `[P2]` The site wind regime.** Fetched 23 Nov 2026 from the Planning Department Site Wind Availability Data
+      ([data.gov.hk](https://data.gov.hk/en-data/dataset/hk-pland-pland1-site-wind-availability-data),
+      [index](https://www.pland.gov.hk/pland_en/resources/site_wind/open_data/site_wind_open_data.csv)).
+      `backend/data/reference/hsk_site_wind.json` is `verified: true` for HK1980 grid cell **3463** (annual / summer /
+      winter at 500, 300 and 200 m). The study-window centroid falls in that cell; the window itself also touches cells
+      3462, 3559 and 3560, and those roses are not merged. AVRG73's combined 40.8% NE/ENE/E fact stays in
+      `hsk_ava_reference.json` and remains the default corridor weight. `directionWeights=site` is the only way the
+      endpoint uses the PlanD frequencies, and they select the headline corridor rather than entering the cell cost.
 - [ ] **D6 `[P2]` The statutory clause texts.** EIAO TM and GN6/2010 into `backend/data/reference/`, plus
       `oasdiff breaking` in the CI contract job. **Not started:** the extracts are external documents.
 

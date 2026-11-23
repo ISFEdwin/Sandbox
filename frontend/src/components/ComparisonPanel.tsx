@@ -22,7 +22,7 @@ import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 
 import HudPanel from '@/components/HudPanel'
-import type { ComparisonAxis } from '@/api/comparisonApi'
+import type { ComparisonAxis, ComparisonWind } from '@/api/comparisonApi'
 import { useComparisonStore } from '@/state/comparisonStore'
 import { usePlanStore } from '@/state/planStore'
 import { runPlanIds, useSandboxStore } from '@/state/sandboxStore'
@@ -64,6 +64,35 @@ const TONE_COLOUR = {
   flat: 'rgba(190, 210, 200, 0.72)',
 } as const
 
+function WindGeometryNotes({ wind }: { wind: ComparisonWind }) {
+  const ratio = wind.fadRatioByDirection?.NE
+  const sidecar = wind.corridor?.properties?.sidecar
+  if (!wind.corridor && !ratio && !sidecar) return null
+  return (
+    <>
+      {ratio && (
+        <Typography variant="caption" color="text.secondary" sx={{ fontSize: 9, display: 'block' }}>
+          NE scenario / baseline FAD{' '}
+          {ratio.ratio === null ? '—' : ratio.ratio.toFixed(3)}. A comparison, not a velocity ratio.
+        </Typography>
+      )}
+      {wind.corridor && (
+        <Typography variant="caption" color="text.secondary" sx={{ fontSize: 9, display: 'block' }}>
+          With 2.5D massing the channel is the OpenFOAM solve for the compass
+          bearing, coloured by the solved speed. The compass also picks the
+          PlanD season and height. Until that file is on disk the drawing is
+          the geometric corridor. Neither drawing is a velocity ratio.
+        </Typography>
+      )}
+      {sidecar?.limitation && (
+        <Typography variant="caption" color="text.secondary" sx={{ fontSize: 8.5, display: 'block' }}>
+          {sidecar.limitation}
+        </Typography>
+      )}
+    </>
+  )
+}
+
 function AxisRow({ axis }: { axis: ComparisonAxis }) {
   const tone = deltaTone(axis)
   return (
@@ -101,6 +130,7 @@ export default function ComparisonPanel() {
   const scene = useSceneStore((s) => s.scene)
   const layers = useSceneStore((s) => s.layers)
   const toggleLayer = useSceneStore((s) => s.toggleLayer)
+  const setLayers = useSceneStore((s) => s.setLayers)
   const plans = usePlanStore((s) => s.plans)
   const selectedPlanIds = usePlanStore((s) => s.selectedPlanIds)
   const sandbox = useSandboxStore()
@@ -262,7 +292,11 @@ export default function ComparisonPanel() {
                 <Button
                   size="small"
                   variant={layers.wind ? 'contained' : 'outlined'}
-                  onClick={() => toggleLayer('wind')}
+                  onClick={() => {
+                    const next = !layers.wind
+                    toggleLayer('wind')
+                    if (next) setLayers({ massing25d: true })
+                  }}
                   disabled={!result.schemes.b.wind.corridor}
                   sx={{ fontSize: 9, minWidth: 0, px: 0.75, py: 0.15 }}
                 >
@@ -276,6 +310,7 @@ export default function ComparisonPanel() {
                 {formatValue(result.schemes.a.wind.firstObstructionMeanM, 'wind', 'm')} m).
                 Under the published prevailing inflow (NE/ENE/E).
               </Typography>
+              <WindGeometryNotes wind={result.schemes.b.wind} />
               <Stack direction="row" spacing={0.75} sx={{ mt: 0.5 }}>
                 <Button
                   size="small"
