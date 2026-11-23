@@ -161,6 +161,30 @@ def test_wind_channel_compares_options_and_does_not_invent_a_velocity_ratio() ->
     assert ne["aFirstObstructionMeanM"] == ne["bFirstObstructionMeanM"]
     assert result["dataCollection"]["screeningLabel"] == SCREENING_LABEL
     assert result["combinedScore"] is None
+    east = channel["east"]
+    assert east["status"] == "EAST_CHANNEL_WINDOW_HEADLINE"
+    assert east["direction"] == "E"
+    assert east["notAVelocity"] is True
+    assert east["annualRank"] == 1
+    assert east["annualOf"] == 16
+    by_season = {row["season"]: row for row in east["seasons"]}
+    assert by_season["summer"]["rank"] == 7
+    assert by_season["summer"]["leadingDirection"] == "SSW"
+    assert by_season["winter"]["rank"] == 2
+    assert by_season["winter"]["leadingDirection"] == "NE"
+    assert abs(by_season["annual"]["frequency"] - 0.150531) < 1e-6
+    assert abs(by_season["summer"]["frequency"] - 0.065346) < 1e-6
+    assert abs(by_season["winter"]["frequency"] - 0.188246) < 1e-6
+    assert [cell["gridCellId"] for cell in east["cells"]] == ["3462", "3463", "3559", "3560"]
+    assert east["centroid"]["gridCellId"] == "3463"
+    assert east["centroid"]["inletSpeedMps"] == 2.3009
+    assert east["solvedStreamlineCount"] == 41
+    assert east["solvedOnRequestPath"] is False
+    assert east["scheme"]["a"]["firstObstructionMeanM"] == east["scheme"]["b"]["firstObstructionMeanM"]
+    assert east["scheme"]["b"]["pathLengthM"] is not None
+    assert "leads the 16 directions" in east["reading"]
+    assert "behind SSW" in east["reading"]
+    assert any(source.get("url") for source in east["sources"])
 
 
 def test_window_weights_select_the_headline_and_do_not_enter_the_cost() -> None:

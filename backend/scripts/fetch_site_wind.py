@@ -213,6 +213,31 @@ def merge_roses(cells: list[dict]) -> dict:
     }
 
 
+def _season_summary(cells: list[dict], merged: dict) -> dict:
+    """Frequencies and derived speeds only. The annual file keeps the bins."""
+    return {
+        "verified": True,
+        "heightM": 500,
+        "frequencyByDirection": merged["frequencyByDirection"],
+        "frequencySum": merged["frequencySum"],
+        "derivedMeanSpeedMps": merged["derivedMeanSpeedMps"],
+        "east": {
+            "frequency": merged["frequencyByDirection"].get("E"),
+            "derivedMeanSpeedMps": (merged.get("derivedMeanSpeedMps") or {}).get("E"),
+        },
+        "cells": [
+            {
+                "gridCellId": cell["gridCellId"],
+                "weightShare": cell.get("weightShare"),
+                "frequency": cell["frequencyByDirection"].get("E"),
+                "derivedMeanSpeedMps": (cell.get("derivedMeanSpeedMps") or {}).get("E"),
+                "fileUrl": cell.get("fileUrl"),
+            }
+            for cell in cells
+        ],
+    }
+
+
 def collect_window() -> int:
     """Write the area-weighted annual 500 m rose for every cell the window touches.
 
@@ -300,6 +325,45 @@ def collect_window() -> int:
     total = sum(cell["weightM2"] for cell in cells) or 1.0
     for cell in cells:
         cell["weightShare"] = round(cell["weightM2"] / total, 6)
+    seasons = {
+        "annual": _season_summary(cells, merged) if merged else {"verified": False},
+    }
+    by_id = {cell["gridCellId"]: cell for cell in cells}
+    for season in ("summer", "winter"):
+        seasonal: list[dict] = []
+        for grid_id, cell in by_id.items():
+            match = [
+                row for row in rows
+                if _grid_id(row) == grid_id
+                and row.get("RANGE_TYPE") == season
+                and row.get("HEIGHT") == "500"
+            ]
+            if len(match) != 1:
+                errors.append(f"{season} 500 m {grid_id}: {len(match)} index rows")
+                continue
+            url = (match[0].get("FILE_URL") or "").strip()
+            try:
+                parsed = _parse_table(_fetch_text(url))
+            except Exception as exc:  # noqa: BLE001
+                errors.append(f"{season} 500 m {grid_id}: {exc}")
+                continue
+            seasonal.append({
+                "gridCellId": grid_id,
+                "weightM2": cell["weightM2"],
+                "weightShare": cell.get("weightShare"),
+                "fileUrl": url,
+                "frequencyByDirection": parsed["frequencyByDirection"],
+                "speedBins": parsed["speedBins"],
+                "derivedMeanSpeedMps": parsed["derivedMeanSpeedMps"],
+            })
+        if len(seasonal) == len(cells) and cells:
+            try:
+                seasons[season] = _season_summary(seasonal, merge_roses(seasonal))
+            except ValueError as exc:
+                errors.append(f"{season} 500 m: {exc}")
+                seasons[season] = {"verified": False, "reason": str(exc)}
+        else:
+            seasons[season] = {"verified": False}
     document = {
         "artefact": "site_wind_window",
         "verified": verified,
@@ -325,6 +389,12 @@ def collect_window() -> int:
         "gridCellIds": [cell["gridCellId"] for cell in cells],
         "cells": cells,
         "merged": merged,
+        "seasons": seasons,
+        "provenance": {
+            "dataset": "Planning Department Site Wind Availability Data",
+            "datasetUrl": DATASET_URL,
+            "indexUrl": INDEX_URL,
+        },
         "errors": errors,
         "whatThisIsNot": [
             "Not a velocity ratio and not a model result.",

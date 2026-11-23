@@ -128,6 +128,10 @@ Two months of engineering that is invisible in a demo and decisive in a pilot.
       window rose (NE / ENE / E). SVR and LVR stay null, because TC 1/06 Annex A defines
       them from pedestrian test points this screening does not hold. The coarse channel
       solve remains off the request path and is not re-solved per scheme.
+      The east channel is a card on that board: annual, summer and winter frequencies
+      and ranks for the four window cells, the centroid 10 m inlet, the solved
+      streamline count, and the A/B first-obstruction and path length in metres.
+      Draw E sets the compass to east. The axis is still partial.
 
 - [ ] **B12 `[P2]` Paid or local model id for the LLM path.** Rate limits in a paying session are a churn event.
 
@@ -177,13 +181,15 @@ Two months of engineering that is invisible in a demo and decisive in a pilot.
       selects the headline corridor from that merge and does not enter the cell cost.
       `directionWeights=site` is still cell 3463 alone. AVRG73's combined 40.8% NE/ENE/E fact stays in
       `hsk_ava_reference.json` and remains the default corridor weight. `site` and `window` select the headline
-      corridor. Neither weight enters the cell cost.
+      corridor. Neither weight enters the cell cost. The same four cells now also carry summer and winter
+      500 m frequencies and derived speeds in that window file (`seasons`). Annual east leads the sixteen
+      directions (15.1%). Summer east ranks 7th, behind SSW. Winter east ranks 2nd, behind NE.
 - [ ] **D6 `[P2]` The statutory clause texts.** EIAO TM and GN6/2010 into `backend/data/reference/`, plus
       `oasdiff breaking` in the CI contract job. **Partly started (23 Nov 2026):** the sentences the
       data-collection and wind-channel reads apply are in `backend/data/reference/regulatory_duties.json`,
       including GN 6/2023 §21 (GN 6/2010 §21 kept, not applied) and TC 1/06's comparison duty and VR
-      definition. The rest of each instrument is not copied. `oasdiff` is still not in CI. G7 is still
-      the wider extract.
+      definition. The rest of each instrument is not copied. `oasdiff breaking` v1.39.0 now runs in the
+      CI contract job against the base `contracts/openapi.json`. G7 is still the wider extract.
 
 ---
 

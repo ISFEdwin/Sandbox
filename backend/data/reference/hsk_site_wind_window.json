@@ -3033,6 +3033,238 @@
     "derivedMeanSpeedMethod": "Frequency-weighted midpoint of the area-weighted speed bins. PlanD does not publish a window mean; this figure is calculated from the occurrence tables and is not a measurement of its own.",
     "weightM2": 436097.158
   },
+  "seasons": {
+    "annual": {
+      "verified": true,
+      "heightM": 500,
+      "frequencyByDirection": {
+        "N": 0.026575,
+        "NNE": 0.070902,
+        "NE": 0.107943,
+        "ENE": 0.105245,
+        "E": 0.150531,
+        "ESE": 0.09655,
+        "SE": 0.079253,
+        "SSE": 0.060308,
+        "S": 0.062226,
+        "SSW": 0.098746,
+        "SW": 0.057372,
+        "WSW": 0.023998,
+        "W": 0.021624,
+        "WNW": 0.010401,
+        "NW": 0.011776,
+        "NNW": 0.015251
+      },
+      "frequencySum": 0.998701,
+      "derivedMeanSpeedMps": {
+        "N": 4.2975,
+        "NNE": 6.9734,
+        "NE": 6.8952,
+        "ENE": 5.6893,
+        "E": 5.3865,
+        "ESE": 5.1214,
+        "SE": 6.2215,
+        "SSE": 5.7815,
+        "S": 5.411,
+        "SSW": 6.2476,
+        "SW": 6.4356,
+        "WSW": 4.5833,
+        "W": 2.8767,
+        "WNW": 3.2,
+        "NW": 3.1829,
+        "NNW": 3.3092
+      },
+      "east": {
+        "frequency": 0.150531,
+        "derivedMeanSpeedMps": 5.3865
+      },
+      "cells": [
+        {
+          "gridCellId": "3462",
+          "weightShare": 0.223823,
+          "frequency": 0.148,
+          "derivedMeanSpeedMps": 5.2931,
+          "fileUrl": "https://www.pland.gov.hk/pland_en/resources/site_wind/site_wind/table/annual/d_00319_lev500.txt"
+        },
+        {
+          "gridCellId": "3463",
+          "weightShare": 0.375641,
+          "frequency": 0.151,
+          "derivedMeanSpeedMps": 5.4408,
+          "fileUrl": "https://www.pland.gov.hk/pland_en/resources/site_wind/site_wind/table/annual/d_00273_lev500.txt"
+        },
+        {
+          "gridCellId": "3559",
+          "weightShare": 0.149549,
+          "frequency": 0.149,
+          "derivedMeanSpeedMps": 5.277,
+          "fileUrl": "https://www.pland.gov.hk/pland_en/resources/site_wind/site_wind/table/annual/d_00320_lev500.txt"
+        },
+        {
+          "gridCellId": "3560",
+          "weightShare": 0.250986,
+          "frequency": 0.153,
+          "derivedMeanSpeedMps": 5.4477,
+          "fileUrl": "https://www.pland.gov.hk/pland_en/resources/site_wind/site_wind/table/annual/d_00274_lev500.txt"
+        }
+      ]
+    },
+    "summer": {
+      "verified": true,
+      "heightM": 500,
+      "frequencyByDirection": {
+        "N": 0.01285,
+        "NNE": 0.017,
+        "NE": 0.016624,
+        "ENE": 0.024401,
+        "E": 0.065346,
+        "ESE": 0.081602,
+        "SE": 0.078377,
+        "SSE": 0.093837,
+        "S": 0.117601,
+        "SSW": 0.201071,
+        "SW": 0.134718,
+        "WSW": 0.053622,
+        "W": 0.044401,
+        "WNW": 0.019776,
+        "NW": 0.019776,
+        "NNW": 0.016599
+      },
+      "frequencySum": 0.997601,
+      "derivedMeanSpeedMps": {
+        "N": 3.8145,
+        "NNE": 5.4373,
+        "NE": 4.6177,
+        "ENE": 6.0574,
+        "E": 5.9987,
+        "ESE": 5.9772,
+        "SE": 6.789,
+        "SSE": 6.6332,
+        "S": 6.3424,
+        "SSW": 6.574,
+        "SW": 6.9112,
+        "WSW": 5.3057,
+        "W": 3.9747,
+        "WNW": 3.8002,
+        "NW": 4.5024,
+        "NNW": 4.184
+      },
+      "east": {
+        "frequency": 0.065346,
+        "derivedMeanSpeedMps": 5.9987
+      },
+      "cells": [
+        {
+          "gridCellId": "3462",
+          "weightShare": 0.223823,
+          "frequency": 0.067,
+          "derivedMeanSpeedMps": 5.7769,
+          "fileUrl": "https://www.pland.gov.hk/pland_en/resources/site_wind/site_wind/table/summer/d_00319_lev500.txt"
+        },
+        {
+          "gridCellId": "3463",
+          "weightShare": 0.375641,
+          "frequency": 0.065,
+          "derivedMeanSpeedMps": 6.1061,
+          "fileUrl": "https://www.pland.gov.hk/pland_en/resources/site_wind/site_wind/table/summer/d_00273_lev500.txt"
+        },
+        {
+          "gridCellId": "3559",
+          "weightShare": 0.149549,
+          "frequency": 0.066,
+          "derivedMeanSpeedMps": 5.9,
+          "fileUrl": "https://www.pland.gov.hk/pland_en/resources/site_wind/site_wind/table/summer/d_00320_lev500.txt"
+        },
+        {
+          "gridCellId": "3560",
+          "weightShare": 0.250986,
+          "frequency": 0.064,
+          "derivedMeanSpeedMps": 6.0968,
+          "fileUrl": "https://www.pland.gov.hk/pland_en/resources/site_wind/site_wind/table/summer/d_00274_lev500.txt"
+        }
+      ]
+    },
+    "winter": {
+      "verified": true,
+      "heightM": 500,
+      "frequencyByDirection": {
+        "N": 0.028575,
+        "NNE": 0.113855,
+        "NE": 0.198187,
+        "ENE": 0.165741,
+        "E": 0.188246,
+        "ESE": 0.097867,
+        "SE": 0.071878,
+        "SSE": 0.03743,
+        "S": 0.030771,
+        "SSW": 0.027072,
+        "SW": 0.0117,
+        "WSW": 0.004624,
+        "W": 0.006525,
+        "WNW": 0.002624,
+        "NW": 0.004,
+        "NNW": 0.010276
+      },
+      "frequencySum": 0.999371,
+      "derivedMeanSpeedMps": {
+        "N": 3.935,
+        "NNE": 6.8164,
+        "NE": 6.8196,
+        "ENE": 5.5133,
+        "E": 5.0899,
+        "ESE": 4.4658,
+        "SE": 5.7119,
+        "SSE": 4.9948,
+        "S": 4.733,
+        "SSW": 5.0813,
+        "SW": 3.9433,
+        "WSW": 1.7058,
+        "W": 1.3362,
+        "WNW": 1.2505,
+        "NW": 1.5952,
+        "NNW": 3.0319
+      },
+      "east": {
+        "frequency": 0.188246,
+        "derivedMeanSpeedMps": 5.0899
+      },
+      "cells": [
+        {
+          "gridCellId": "3462",
+          "weightShare": 0.223823,
+          "frequency": 0.179,
+          "derivedMeanSpeedMps": 4.9124,
+          "fileUrl": "https://www.pland.gov.hk/pland_en/resources/site_wind/site_wind/table/winter/d_00319_lev500.txt"
+        },
+        {
+          "gridCellId": "3463",
+          "weightShare": 0.375641,
+          "frequency": 0.192,
+          "derivedMeanSpeedMps": 5.1335,
+          "fileUrl": "https://www.pland.gov.hk/pland_en/resources/site_wind/site_wind/table/winter/d_00273_lev500.txt"
+        },
+        {
+          "gridCellId": "3559",
+          "weightShare": 0.149549,
+          "frequency": 0.183,
+          "derivedMeanSpeedMps": 5.0056,
+          "fileUrl": "https://www.pland.gov.hk/pland_en/resources/site_wind/site_wind/table/winter/d_00320_lev500.txt"
+        },
+        {
+          "gridCellId": "3560",
+          "weightShare": 0.250986,
+          "frequency": 0.194,
+          "derivedMeanSpeedMps": 5.2165,
+          "fileUrl": "https://www.pland.gov.hk/pland_en/resources/site_wind/site_wind/table/winter/d_00274_lev500.txt"
+        }
+      ]
+    }
+  },
+  "provenance": {
+    "dataset": "Planning Department Site Wind Availability Data",
+    "datasetUrl": "https://data.gov.hk/en-data/dataset/hk-pland-pland1-site-wind-availability-data",
+    "indexUrl": "https://www.pland.gov.hk/pland_en/resources/site_wind/open_data/site_wind_open_data.csv"
+  },
   "errors": [],
   "whatThisIsNot": [
     "Not a velocity ratio and not a model result.",

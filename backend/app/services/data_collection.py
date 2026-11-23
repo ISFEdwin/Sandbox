@@ -207,6 +207,135 @@ def _wind_inflow() -> dict[str, Any]:
     }
 
 
+def _rank_of(frequencies: dict[str, Any], name: str) -> int | None:
+    if name not in frequencies:
+        return None
+    ordered = sorted(frequencies, key=lambda key: (-float(frequencies[key]), key))
+    return ordered.index(name) + 1
+
+
+def _east_side(wind: dict[str, Any]) -> dict[str, Any]:
+    direction = (wind.get("directions") or {}).get("E") or {}
+    ratio = (wind.get("fadRatioByDirection") or {}).get("E") or {}
+    return {
+        "firstObstructionMeanM": direction.get("firstObstructionMeanM"),
+        "pathLengthM": direction.get("pathLengthM"),
+        "entryEdge": direction.get("entryEdge"),
+        "fadRatio": ratio.get("ratio"),
+        "unit": "m",
+    }
+
+
+def _east_channel(
+    inflow: dict[str, Any],
+    scheme_winds: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    """The east reading of the window rose, with the cells and seasons behind it.
+
+    East is the annual headline among the marched directions. Summer and
+    winter are shown beside it so that headline is not read as the year-round
+    prevailing wind. None of the speeds is a velocity ratio.
+    """
+    doc = _read(WINDOW_WIND_PATH) or {}
+    seasons_doc = doc.get("seasons") or {}
+    seasons: list[dict[str, Any]] = []
+    for name in ("annual", "summer", "winter"):
+        block = seasons_doc.get(name) or {}
+        frequencies = block.get("frequencyByDirection") or {}
+        east = block.get("east") or {}
+        if block.get("verified") is not True or not frequencies:
+            seasons.append({"season": name, "verified": False})
+            continue
+        leader = max(frequencies, key=lambda key: (float(frequencies[key]), key))
+        seasons.append({
+            "season": name,
+            "verified": True,
+            "heightM": block.get("heightM") or 500,
+            "frequency": east.get("frequency"),
+            "derivedMeanSpeedMps": east.get("derivedMeanSpeedMps"),
+            "rank": _rank_of(frequencies, "E"),
+            "of": len(frequencies),
+            "leadingDirection": leader,
+            "leadingFrequency": frequencies.get(leader),
+        })
+    index = _read(WIND_INDEX_PATH) or {}
+    table = (((index.get("tables") or {}).get("annual") or {}).get("500") or {})
+    centroid_east = (table.get("directions") or {}).get("E") or {}
+    sidecar = _read(CHANNEL_SIDECAR_PATH) or {}
+    count = (sidecar.get("directions") or {}).get("E")
+    reference = _read(AVA_PATH) or {}
+    provenance = doc.get("provenance") or {}
+    source = reference.get("source") or {}
+    annual = next((row for row in seasons if row.get("season") == "annual"), {})
+    headline = inflow.get("headlineDirection") == "E"
+
+    def _season_sentence(row: dict[str, Any]) -> str:
+        label = str(row.get("season") or "season").capitalize()
+        if row.get("verified") is not True or not isinstance(row.get("frequency"), (int, float)):
+            return f"{label} east is not in the window file."
+        share = f"{float(row['frequency']) * 100:.1f}%"
+        if row.get("leadingDirection") == "E":
+            return f"{label} east is {share} and leads the {row.get('of')} directions."
+        return (
+            f"{label} east is {share} and ranks {row.get('rank')} of {row.get('of')}, "
+            f"behind {row.get('leadingDirection')}."
+        )
+
+    return {
+        "status": (
+            "EAST_CHANNEL_WINDOW_HEADLINE" if headline
+            else "EAST_CHANNEL_NOT_THE_ANNUAL_HEADLINE"
+        ),
+        "direction": "E",
+        "role": (
+            "Highest frequency among the marched directions NE and E on the "
+            "annual area-weighted window rose. ENE is in the prevailing set "
+            "and has no travel vector, so it is not marched."
+        ),
+        "notAVelocity": True,
+        "annualFrequency": annual.get("frequency"),
+        "annualRank": annual.get("rank"),
+        "annualOf": annual.get("of"),
+        "derivedMeanSpeedMps": annual.get("derivedMeanSpeedMps"),
+        "heightM": 500,
+        "seasons": seasons,
+        "cells": list(((seasons_doc.get("annual") or {}).get("cells") or [])),
+        "centroid": {
+            "gridCellId": index.get("gridCellId"),
+            "frequency": centroid_east.get("frequency") if isinstance(centroid_east, dict) else None,
+            "derivedMeanSpeedMps": (
+                centroid_east.get("derivedMeanSpeedMps") if isinstance(centroid_east, dict) else None
+            ),
+            "inletSpeedMps": (
+                centroid_east.get("inletSpeedMps") if isinstance(centroid_east, dict) else None
+            ),
+            "note": inflow.get("inletNote"),
+        },
+        "solvedStreamlineCount": count if isinstance(count, int) else None,
+        "solvedOnRequestPath": False,
+        "scheme": {
+            "a": _east_side(scheme_winds.get("a") or {}),
+            "b": _east_side(scheme_winds.get("b") or {}),
+        },
+        "sources": [
+            {
+                "name": provenance.get("dataset") or "Planning Department Site Wind Availability Data",
+                "url": provenance.get("datasetUrl"),
+            },
+            {"name": "PlanD site-wind index", "url": provenance.get("indexUrl")},
+            {"name": source.get("name"), "url": source.get("url")},
+            {
+                "name": "Technical Circular No. 1/06",
+                "url": (_duty("tc106.annexA.para4") or {}).get("sourceUrl"),
+            },
+        ],
+        "reading": (
+            " ".join(_season_sentence(row) for row in seasons)
+            + " The scheme comparison is the east first-obstruction height, in metres."
+        ),
+    }
+
+
 def wind_channel_comparison(
     scheme_winds: dict[str, dict[str, Any]],
 ) -> dict[str, Any]:
@@ -230,6 +359,8 @@ def wind_channel_comparison(
             direction = (wind.get("directions") or {}).get(name) or {}
             ratio = (wind.get("fadRatioByDirection") or {}).get(name) or {}
             row[f"{key}FirstObstructionMeanM"] = direction.get("firstObstructionMeanM")
+            row[f"{key}PathLengthM"] = direction.get("pathLengthM")
+            row[f"{key}EntryEdge"] = direction.get("entryEdge")
             row[f"{key}FadRatio"] = ratio.get("ratio")
         options.append(row)
     vr_duty = _duty("tc106.annexA.para4")
@@ -260,6 +391,7 @@ def wind_channel_comparison(
             },
         },
         "benchmark": (_duty("tc106.para6") or {}).get("quote"),
+        "east": _east_channel(inflow, scheme_winds),
     }
 
 
