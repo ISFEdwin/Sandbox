@@ -73,6 +73,54 @@ export interface ComparisonScheme {
   wind: ComparisonWind
 }
 
+export interface DataCollectionRow {
+  id: string
+  class: string
+  name: string
+  count: number | null
+  source: string | null
+  planId?: string | null
+  known: string[]
+  unknown: string[]
+}
+
+export interface WindChannelOption {
+  direction: string
+  frequency: number | null
+  aFirstObstructionMeanM?: number | null
+  bFirstObstructionMeanM?: number | null
+  aFadRatio?: number | null
+  bFadRatio?: number | null
+}
+
+export interface DataCollectionRecord {
+  status: string
+  screeningLabel: string
+  notADetermination: boolean
+  inventory: DataCollectionRow[]
+  classesNotHeld: string[]
+  furtherInformation: string[]
+  windInflow: {
+    status: string
+    headlineDirection: string | null
+    headlineFrequency: number | null
+    cellIds: string[]
+  }
+}
+
+export interface WindChannelReading {
+  status: string
+  notAnAva: boolean
+  inflow: DataCollectionRecord['windInflow']
+  options: WindChannelOption[]
+  velocityRatio: {
+    svr: null
+    lvr: null
+    reason: string
+  }
+  benchmark?: string
+}
+
 export interface ComparisonResult {
   sceneId: string
   status: string
@@ -85,6 +133,8 @@ export interface ComparisonResult {
   }
   schemes: { a: ComparisonScheme; b: ComparisonScheme }
   axes: ComparisonAxis[]
+  dataCollection?: DataCollectionRecord
+  windChannel?: WindChannelReading
   /** Always null. The absence is the product decision, not a missing feature. */
   combinedScore: null
   whyNoCombinedScore: string

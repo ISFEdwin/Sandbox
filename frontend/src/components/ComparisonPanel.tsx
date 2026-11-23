@@ -311,6 +311,28 @@ export default function ComparisonPanel() {
                 Under the published prevailing inflow (NE/ENE/E).
               </Typography>
               <WindGeometryNotes wind={result.schemes.b.wind} />
+              {result.windChannel && (
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: 9, display: 'block' }}>
+                  Window inflow {result.windChannel.inflow.headlineDirection ?? '—'}
+                  {result.windChannel.inflow.headlineFrequency != null
+                    ? ` (${(result.windChannel.inflow.headlineFrequency * 100).toFixed(1)}%)`
+                    : ''}
+                  {' · '}
+                  {result.windChannel.options
+                    .filter((option) => option.bFirstObstructionMeanM != null)
+                    .map((option) => `${option.direction} ${option.bFirstObstructionMeanM!.toFixed(1)} m`)
+                    .join(' · ')}
+                  . SVR and LVR are not computed.
+                </Typography>
+              )}
+              {result.dataCollection && (
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: 9, display: 'block' }}>
+                  Data collection: {result.dataCollection.inventory.map((row) => (
+                    row.count == null ? row.name : `${row.name} (${row.count})`
+                  )).join(', ')}
+                  . Committed projects are not held. Not a cumulative assessment.
+                </Typography>
+              )}
               <Stack direction="row" spacing={0.75} sx={{ mt: 0.5 }}>
                 <Button
                   size="small"

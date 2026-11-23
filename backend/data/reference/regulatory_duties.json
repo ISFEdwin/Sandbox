@@ -1,0 +1,115 @@
+{
+  "artefact": "regulatory_duties",
+  "retrieved": "2026-11-23",
+  "note": "Short excerpts for the data-collection and wind-channel reads. Each quote is the sentence the screen applies. The rest of the instrument is not copied here. A superseded note stays, and it is not the live duty.",
+  "entries": [
+    {
+      "id": "gn6.2023.s21",
+      "live": true,
+      "instrument": "EIAO Guidance Note No. 6/2023",
+      "paragraph": "21",
+      "heading": "Cumulative Impacts",
+      "effective": "2023-12",
+      "supersedes": "gn6.2010.s21",
+      "supersededBy": null,
+      "sourceUrl": "https://www.epd.gov.hk/eia/common/files/hb/materials/GN6.pdf",
+      "quote": "Some EIA reports have failed to fully account for the interface with other development projects in the vicinity and, hence, failed to address the cumulative impacts of the projects involved. These development projects should be identified during data collection stage and the extent of the cumulative impacts assessed."
+    },
+    {
+      "id": "gn6.2010.s21",
+      "live": false,
+      "instrument": "EIAO Guidance Note No. 6/2010",
+      "paragraph": "21",
+      "heading": "Cumulative Impacts",
+      "effective": "2010-12",
+      "supersedes": null,
+      "supersededBy": "gn6.2023.s21",
+      "sourceUrl": "https://www.afcd.gov.hk/english/conservation/con_tech/files/GN6_2010.pdf",
+      "quote": "Some EIA reports have failed to fully account for the interface with other development projects in the vicinity and, hence, failed to address the cumulative impacts of the projects involved. These development projects should be identified during data collection stage and the extent of the cumulative impacts assessed."
+    },
+    {
+      "id": "eiao.tm.4.3.1.c.ii",
+      "live": true,
+      "instrument": "Technical Memorandum on the Environmental Impact Assessment Process",
+      "paragraph": "4.3.1(c)(ii)",
+      "heading": "Impact Evaluation",
+      "effective": "2023-06-30",
+      "supersedes": null,
+      "supersededBy": null,
+      "sourceUrl": "https://www.epd.gov.hk/eia/en/legis/memorandum/text4.html",
+      "quote": "the projected environmental conditions with the project in place and the cumulative environmental impacts taking into account all relevant existing, committed and planned projects"
+    },
+    {
+      "id": "eiao.tm.4.3.1.c.iii",
+      "live": true,
+      "instrument": "Technical Memorandum on the Environmental Impact Assessment Process",
+      "paragraph": "4.3.1(c)(iii)",
+      "heading": "Impact Evaluation",
+      "effective": "2023-06-30",
+      "supersedes": null,
+      "supersededBy": null,
+      "sourceUrl": "https://www.epd.gov.hk/eia/en/legis/memorandum/text4.html",
+      "quote": "a differentiation between the environmental impact caused by the project and that caused by other projects, and to what extent the project aggravates or improves the existing or projected environmental conditions"
+    },
+    {
+      "id": "eiao.tm.4.3.4.c",
+      "live": true,
+      "instrument": "Technical Memorandum on the Environmental Impact Assessment Process",
+      "paragraph": "4.3.4(c)",
+      "heading": "Cumulative environmental effects",
+      "effective": "2023-06-30",
+      "supersedes": null,
+      "supersededBy": null,
+      "sourceUrl": "https://www.epd.gov.hk/eia/en/legis/memorandum/text4.html",
+      "quote": "there may be interactions between the environmental impacts of the project and the environmental impacts of other developments, resulting in accumulation of impacts and affecting the cumulative environmental impacts."
+    },
+    {
+      "id": "eiao.tm.4.4.3",
+      "live": true,
+      "instrument": "Technical Memorandum on the Environmental Impact Assessment Process",
+      "paragraph": "4.4.3",
+      "heading": "Evaluation of the Residual Environmental Impacts",
+      "effective": "2023-06-30",
+      "supersedes": null,
+      "supersededBy": null,
+      "sourceUrl": "https://www.epd.gov.hk/eia/en/legis/memorandum/text4.html",
+      "quote": "The residual environmental impacts refer to the net environmental impacts after mitigation, taking into account the background environmental conditions and the impacts from existing, committed and planned projects."
+    },
+    {
+      "id": "tc106.para6",
+      "live": true,
+      "instrument": "Technical Circular No. 1/06 — Air Ventilation Assessment",
+      "paragraph": "6",
+      "heading": "No absolute benchmark",
+      "effective": "2006-07-19",
+      "supersedes": null,
+      "supersededBy": null,
+      "sourceUrl": "https://www.devb.gov.hk/filemanager/en/content_679/hplb-etwb-tc-01-06.pdf",
+      "quote": "The framework developed at this stage does not provide an absolute benchmark standard against which the air ventilation impacts can be confirmed to be acceptable or unacceptable. The framework would however, enable comparison of design options in external air ventilation terms and identification of potential problem areas for design improvements."
+    },
+    {
+      "id": "tc106.annexA.para4",
+      "live": true,
+      "instrument": "Technical Circular No. 1/06, Annex A",
+      "paragraph": "4",
+      "heading": "Wind velocity ratio",
+      "effective": "2006-07-19",
+      "supersedes": null,
+      "supersededBy": null,
+      "sourceUrl": "https://www.devb.gov.hk/filemanager/en/content_679/hplb-etwb-tc-01-06.pdf",
+      "quote": "Wind VR is defined as Vp/V∞ (V pedestrian/V infinity). V∞ captures the wind velocity at the top of the wind boundary layer (typically assumed to be around 400 m to 600 m above city centre, or at a height wind is unaffected by the urban roughness below). V∞ is taken as the wind availability of the site. Vp captures the wind velocity at the pedestrian level (2 m above ground) after taking into account the effects of buildings and urban features."
+    },
+    {
+      "id": "tc106.annexA.para30",
+      "live": true,
+      "instrument": "Technical Circular No. 1/06, Annex A",
+      "paragraph": "30",
+      "heading": "Site and local spatial average velocity ratio",
+      "effective": "2006-07-19",
+      "supersedes": null,
+      "supersededBy": null,
+      "sourceUrl": "https://www.devb.gov.hk/filemanager/en/content_679/hplb-etwb-tc-01-06.pdf",
+      "quote": "Comparing performances of design options using the spatial average VR (both SVR and LVR) is recommended."
+    }
+  ]
+}

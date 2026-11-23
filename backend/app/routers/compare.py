@@ -132,6 +132,24 @@ def post_compare_schemes(scene_id: str, body: dict) -> dict:
     )
 
 
+@router.get("/scenes/{scene_id}/data-collection")
+def get_data_collection(scene_id: str) -> dict:
+    """GET /api/scenes/{sceneId}/data-collection
+
+    The projects and the wind regime the committed files can name, with the
+    duties those names are answering. Existing envelopes and planned catalog
+    rows are listed. Committed projects are not held, and the response says
+    so. Site and local velocity ratios are null.
+
+    This is the data-collection inventory Guidance Note 6/2023 paragraph 21
+    asks for. It is not the cumulative assessment that follows it, and it is
+    not an air ventilation assessment.
+    """
+    from app.services.data_collection import collect
+
+    return collect(scene_id)
+
+
 @router.post("/scenes/{scene_id}/sensitivity")
 def post_sensitivity(scene_id: str, body: dict) -> dict:
     """POST /api/scenes/{sceneId}/sensitivity

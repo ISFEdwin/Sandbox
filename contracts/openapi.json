@@ -4171,6 +4171,48 @@
         "summary": "Post Compare Schemes"
       }
     },
+    "/api/scenes/{scene_id}/data-collection": {
+      "get": {
+        "description": "GET /api/scenes/{sceneId}/data-collection\n\nThe projects and the wind regime the committed files can name, with the\nduties those names are answering. Existing envelopes and planned catalog\nrows are listed. Committed projects are not held, and the response says\nso. Site and local velocity ratios are null.\n\nThis is the data-collection inventory Guidance Note 6/2023 paragraph 21\nasks for. It is not the cumulative assessment that follows it, and it is\nnot an air ventilation assessment.",
+        "operationId": "get_data_collection_api_scenes__scene_id__data_collection_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scene_id",
+            "required": true,
+            "schema": {
+              "title": "Scene Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Data Collection Api Scenes  Scene Id  Data Collection Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Data Collection"
+      }
+    },
     "/api/scenes/{scene_id}/design-metrics": {
       "get": {
         "description": "GET /api/scenes/{sceneId}/design-metrics\n\nWhat the current massing does to shade and ventilation, measured from the\ngeometry, with every metric tied to a rule Hong Kong's own air ventilation\nguidance states.\n\n**This prints no verdict, and that is the design.** The AVA policy document\nbehind Hong Kong's guidance says a higher velocity ratio is the better design\nbut that \"whether the better design option meets a standard cannot be known\".\nA pass/fail here would invent a standard that does not exist. The numbers are\nfor comparing this scheme against another one, which is Stage 3.\n\nEvery metric names its source rule. Nothing here is CFD, a comfort index, or\na daily energy balance, and each caveat says which of those it is not.\n\n``dayOfYear`` is accepted as a spelling of ``day_of_year``, and the day is\nrange-checked -- see the note on the check below.",
@@ -6023,7 +6065,7 @@
     },
     "/api/scenes/{scene_id}/ventilation/corridors": {
       "get": {
-        "description": "GET /api/scenes/{sceneId}/ventilation/corridors?directions=NE,SW\n\nThe least-cost through-route across the frontal-area cost surface, per wind\ndirection -- the openest path the wind can take, computed from the geometry.\n\n``directions`` defaults to the eight principal directions; the wind-direction\ntable is the canonical one in ``design_metrics`` (never re-derived here, which\nis how NE and SW get swapped). All 16 names in that table are accepted as\nweights. Only the eight with a travel vector are marched. The corridor is\n**geometry, not flow**: it is not a measured wind speed and FAD is not a\nvelocity ratio, which the response states.\n\n``directionWeights`` selects the headline corridor. Omitted, the selection\nis the AVRG73 combined NE/ENE/E fact, which is not split into per-direction\nfrequencies. ``site`` uses the verified PlanD annual 500 m occurrences.\n``NE:0.2,E:0.1`` is an explicit selection. Weights never enter the cell cost.",
+        "description": "GET /api/scenes/{sceneId}/ventilation/corridors?directions=NE,SW\n\nThe least-cost through-route across the frontal-area cost surface, per wind\ndirection -- the openest path the wind can take, computed from the geometry.\n\n``directions`` defaults to the eight principal directions; the wind-direction\ntable is the canonical one in ``design_metrics`` (never re-derived here, which\nis how NE and SW get swapped). All 16 names in that table are accepted as\nweights. Only the eight with a travel vector are marched. The corridor is\n**geometry, not flow**: it is not a measured wind speed and FAD is not a\nvelocity ratio, which the response states.\n\n``directionWeights`` selects the headline corridor. Omitted, the selection\nis the AVRG73 combined NE/ENE/E fact, which is not split into per-direction\nfrequencies. ``site`` uses the verified PlanD annual 500 m occurrences for\nthe centroid cell. ``window`` uses the area-weighted occurrences of every\nPlanD cell the study window touches. ``NE:0.2,E:0.1`` is an explicit\nselection. Weights never enter the cell cost.",
         "operationId": "get_ventilation_corridors_api_scenes__scene_id__ventilation_corridors_get",
         "parameters": [
           {

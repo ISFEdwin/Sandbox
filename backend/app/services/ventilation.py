@@ -97,6 +97,7 @@ except Exception:  # noqa: BLE001
 
 REFERENCE_PATH = "reference/hsk_ava_reference.json"
 SITE_WIND_PATH = "reference/hsk_site_wind.json"
+WINDOW_WIND_PATH = "reference/hsk_site_wind_window.json"
 
 # A stated screening weight on the land-class raster. It is not a roughness
 # length (z0), not a speed, and not folded into frontal area density. Vegetated
@@ -445,6 +446,41 @@ def load_site_wind() -> dict[str, Any] | None:
         return None
 
 
+def load_window_wind() -> dict[str, Any] | None:
+    """The area-weighted study-window rose, or None when it has not been written."""
+    path: Path = settings.data_dir / WINDOW_WIND_PATH
+    if not path.exists():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def _frequencies_from(freq: dict[str, Any], label: str) -> dict[str, float]:
+    out: dict[str, float] = {}
+    for name in CARDINALS:
+        if name not in freq:
+            raise ValueError(f"{label} has no annual 500 m frequency for {name}")
+        out[name] = float(freq[name])
+    return out
+
+
+def window_direction_frequencies() -> dict[str, float]:
+    """Area-weighted annual occurrence at 500 m across the study window.
+
+    Raises ``ValueError`` when the window file is missing or not verified.
+    The centroid cell is not used as a stand-in.
+    """
+    doc = load_window_wind()
+    if not doc or not doc.get("verified"):
+        raise ValueError(
+            "hsk_site_wind_window.json is missing or not verified; refusing "
+            "to invent a window rose")
+    freq = (doc.get("merged") or {}).get("frequencyByDirection") or {}
+    return _frequencies_from(freq, "the study-window wind file")
+
+
 def site_direction_frequencies() -> dict[str, float]:
     """Annual occurrence at 500 m from the verified site-wind file.
 
@@ -460,13 +496,7 @@ def site_direction_frequencies() -> dict[str, float]:
     annual = seasons.get("annual") or {}
     level = (annual.get("heightsM") or {}).get("500") or {}
     freq = level.get("frequencyByDirection") or {}
-    out: dict[str, float] = {}
-    for name in CARDINALS:
-        if name not in freq:
-            raise ValueError(
-                f"site-wind file has no annual 500 m frequency for {name}")
-        out[name] = float(freq[name])
-    return out
+    return _frequencies_from(freq, "the site-wind file")
 
 
 def _direction_weight_block(
@@ -491,7 +521,15 @@ def _direction_weight_block(
             "wind rose unless source is the PlanD file, and they are not "
             "applied to the cell cost."
         )
-        if source.startswith("PlanD"):
+        if "window" in source:
+            note = (
+                "Headline direction is the highest area-weighted annual "
+                "occurrence at 500 m among the marched corridors, from the "
+                "verified PlanD cells the study window touches. ENE has a "
+                "frequency and no travel vector, so it is not marched. The "
+                "weights are not applied to the cell cost."
+            )
+        elif source.startswith("PlanD"):
             note = (
                 "Headline direction is the highest annual occurrence at 500 m "
                 "among the marched corridors, from the verified PlanD cell. "
@@ -523,7 +561,7 @@ def _direction_weight_block(
         "method": (
             "Select the headline corridor by weight. Default source is the "
             "AVRG73 combined frequency. An explicit directionWeights query, "
-            "or the token 'site', replaces the selection only."
+            "or the token 'site' or 'window', replaces the selection only."
         ),
         "limitation": note,
     }

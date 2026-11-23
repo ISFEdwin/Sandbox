@@ -124,6 +124,10 @@ Two months of engineering that is invisible in a demo and decisive in a pilot.
       the closed form is 180-degree periodic. NE ≠ SW is the directional-exposure march and the shelter rays. Corridor
       cost is still `1 + cellFAD`, plus a separate ground-level term and a separate land-class roughness penalty.
       Geometric effect labels are patterns, not speeds. No velocity ratio and no pass/fail.
+      23 Nov 2026: the comparison board now carries a wind-channel option table under the
+      window rose (NE / ENE / E). SVR and LVR stay null, because TC 1/06 Annex A defines
+      them from pedestrian test points this screening does not hold. The coarse channel
+      solve remains off the request path and is not re-solved per scheme.
 
 - [ ] **B12 `[P2]` Paid or local model id for the LLM path.** Rate limits in a paying session are a churn event.
 
@@ -168,11 +172,18 @@ Two months of engineering that is invisible in a demo and decisive in a pilot.
       [index](https://www.pland.gov.hk/pland_en/resources/site_wind/open_data/site_wind_open_data.csv)).
       `backend/data/reference/hsk_site_wind.json` is `verified: true` for HK1980 grid cell **3463** (annual / summer /
       winter at 500, 300 and 200 m). The study-window centroid falls in that cell; the window itself also touches cells
-      3462, 3559 and 3560, and those roses are not merged. AVRG73's combined 40.8% NE/ENE/E fact stays in
-      `hsk_ava_reference.json` and remains the default corridor weight. `directionWeights=site` is the only way the
-      endpoint uses the PlanD frequencies, and they select the headline corridor rather than entering the cell cost.
+      3462, 3559 and 3560. Those four annual 500 m roses are now area-weighted in
+      `backend/data/reference/hsk_site_wind_window.json`. `directionWeights=window`
+      selects the headline corridor from that merge and does not enter the cell cost.
+      `directionWeights=site` is still cell 3463 alone. AVRG73's combined 40.8% NE/ENE/E fact stays in
+      `hsk_ava_reference.json` and remains the default corridor weight. `site` and `window` select the headline
+      corridor. Neither weight enters the cell cost.
 - [ ] **D6 `[P2]` The statutory clause texts.** EIAO TM and GN6/2010 into `backend/data/reference/`, plus
-      `oasdiff breaking` in the CI contract job. **Not started:** the extracts are external documents.
+      `oasdiff breaking` in the CI contract job. **Partly started (23 Nov 2026):** the sentences the
+      data-collection and wind-channel reads apply are in `backend/data/reference/regulatory_duties.json`,
+      including GN 6/2023 §21 (GN 6/2010 §21 kept, not applied) and TC 1/06's comparison duty and VR
+      definition. The rest of each instrument is not copied. `oasdiff` is still not in CI. G7 is still
+      the wider extract.
 
 ---
 
@@ -296,6 +307,7 @@ Everything else is downstream of those four.
 fresh suite run — before 1 Dec. See §F.
 
 **Government-criteria overlay (23 Nov):** G1–G3 and G5–G6 are met. The Criteria fit panel sits beside the parameter
-card and reads `POST /api/declarations/intake`. The read is not a statutory determination. G4 (no map layer), G7, G8
-and G9 are still open. G8 still comes before any site-specific HSK–HT claim. See §G.
+card and reads `POST /api/declarations/intake`. The read is not a statutory determination. The comparison also names
+the projects held at data collection and compares the wind channel under the study-window inflow. SVR and LVR stay
+empty. G4 (no map layer), G7, G8 and G9 are still open. G8 still comes before any site-specific HSK–HT claim. See §G.
 
