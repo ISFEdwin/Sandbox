@@ -290,6 +290,455 @@
         "title": "ChatRequest",
         "type": "object"
       },
+      "DeclarationIntake": {
+        "additionalProperties": false,
+        "description": "Facts a declaration may hold. An absent fact is not filled in.",
+        "properties": {
+          "channelNamedAreaM": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channelnamedaream"
+          },
+          "channelWidthM": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channelwidthm"
+          },
+          "contiguousSameOrAssociatedPersons": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contiguoussameorassociatedpersons"
+          },
+          "coverageFraction": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coveragefraction"
+          },
+          "deepBayBufferZone": {
+            "anyOf": [
+              {
+                "enum": [
+                  "1",
+                  "2",
+                  "neither"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deepbaybufferzone"
+          },
+          "districtAreaHa": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Districtareaha"
+          },
+          "dredgingM3": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dredgingm3"
+          },
+          "dredgingResidentialM": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dredgingresidentialm"
+          },
+          "dredgingSpecifiedAreaLandwardM": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dredgingspecifiedarealandwardm"
+          },
+          "dredgingSpecifiedAreaSeawardM": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dredgingspecifiedareaseawardm"
+          },
+          "flatCount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flatcount"
+          },
+          "inSensitiveArea": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Insensitivearea"
+          },
+          "majorOrLargeScale": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Majororlargescale"
+          },
+          "mayCauseImpacts": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maycauseimpacts"
+          },
+          "nteh": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nteh"
+          },
+          "ozpColumn": {
+            "anyOf": [
+              {
+                "enum": [
+                  "1",
+                  "2",
+                  "neither"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ozpcolumn"
+          },
+          "planningPermissionDate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planningpermissiondate"
+          },
+          "pollutionSensitive": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pollutionsensitive"
+          },
+          "population": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Population"
+          },
+          "railType": {
+            "anyOf": [
+              {
+                "enum": [
+                  "mtr",
+                  "kcr",
+                  "lrt"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Railtype"
+          },
+          "receiverDistanceRailM": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Receiverdistancerailm"
+          },
+          "receiverDistanceRoadM": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Receiverdistanceroadm"
+          },
+          "reclamationHa": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reclamationha"
+          },
+          "reclamationResidentialM": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reclamationresidentialm"
+          },
+          "reclamationSpecifiedAreaLandwardM": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reclamationspecifiedarealandwardm"
+          },
+          "reclamationSpecifiedAreaSeawardM": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reclamationspecifiedareaseawardm"
+          },
+          "roadClass": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Roadclass"
+          },
+          "roadLengthM": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Roadlengthm"
+          },
+          "roadScreening": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Roadscreening"
+          },
+          "rockCavern": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rockcavern"
+          },
+          "rockCavernPortalM": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rockcavernportalm"
+          },
+          "servedByPublicSewerage": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Servedbypublicsewerage"
+          },
+          "siteAreaHa": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Siteareaha"
+          },
+          "stpM3PerDay": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stpm3Perday"
+          },
+          "stpReceiverM": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stpreceiverm"
+          },
+          "use": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Use"
+          },
+          "withinNef25": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Withinnef25"
+          }
+        },
+        "title": "DeclarationIntake",
+        "type": "object"
+      },
+      "DeclarationIntakeResult": {
+        "additionalProperties": false,
+        "description": "Intake response: the fit object and the pasteable screening-basis annex.",
+        "properties": {
+          "governmentFit": {
+            "$ref": "#/components/schemas/GovernmentFit"
+          },
+          "screeningBasisAnnex": {
+            "title": "Screeningbasisannex",
+            "type": "string"
+          }
+        },
+        "required": [
+          "governmentFit",
+          "screeningBasisAnnex"
+        ],
+        "title": "DeclarationIntakeResult",
+        "type": "object"
+      },
       "DefaultCamera": {
         "additionalProperties": false,
         "description": "Union of §4.2.1's DDL comment and §3.2.1's API example.\n\n``longitude``/``latitude`` are optional; the scene service fills them from\n``center`` so the frontend always receives a complete camera.",
@@ -365,6 +814,85 @@
         "title": "EnvParams",
         "type": "object"
       },
+      "GovernmentFit": {
+        "additionalProperties": false,
+        "description": "The fit object returned at declaration intake.",
+        "properties": {
+          "asAt": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Asat",
+            "type": "object"
+          },
+          "assumptions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Assumptions",
+            "type": "array"
+          },
+          "eaMayBeRequired": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eamayberequired"
+          },
+          "furtherInformation": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Furtherinformation",
+            "type": "array"
+          },
+          "hkpsg": {
+            "$ref": "#/components/schemas/HkpsgAdvisory"
+          },
+          "notADetermination": {
+            "const": true,
+            "title": "Notadetermination",
+            "type": "boolean"
+          },
+          "planningPermission": {
+            "$ref": "#/components/schemas/PlanningPermissionRead"
+          },
+          "schedule2": {
+            "items": {
+              "$ref": "#/components/schemas/Schedule2Flag"
+            },
+            "title": "Schedule2",
+            "type": "array"
+          },
+          "schedule3": {
+            "$ref": "#/components/schemas/Schedule3Read"
+          },
+          "screeningLabel": {
+            "title": "Screeninglabel",
+            "type": "string"
+          },
+          "section44": {
+            "$ref": "#/components/schemas/Section44Read"
+          }
+        },
+        "required": [
+          "screeningLabel",
+          "notADetermination",
+          "schedule3",
+          "planningPermission",
+          "assumptions",
+          "furtherInformation",
+          "section44",
+          "hkpsg",
+          "asAt"
+        ],
+        "title": "GovernmentFit",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -376,6 +904,50 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HkpsgAdvisory": {
+        "additionalProperties": false,
+        "description": "Table 1.3 and NEF 25, as a check against HKPSG. Never a pass or a fail.",
+        "properties": {
+          "advisoryOnly": {
+            "const": true,
+            "title": "Advisoryonly",
+            "type": "boolean"
+          },
+          "appliedOpenSpaceSeparationAsResidential": {
+            "const": false,
+            "title": "Appliedopenspaceseparationasresidential",
+            "type": "boolean"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "passFail": {
+            "const": false,
+            "title": "Passfail",
+            "type": "boolean"
+          },
+          "residentialBufferM": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Residentialbufferm"
+          }
+        },
+        "required": [
+          "advisoryOnly",
+          "passFail",
+          "appliedOpenSpaceSeparationAsResidential",
+          "note"
+        ],
+        "title": "HkpsgAdvisory",
         "type": "object"
       },
       "InterventionCreateResponse": {
@@ -1263,6 +1835,64 @@
           }
         },
         "title": "PlanUpdate",
+        "type": "object"
+      },
+      "PlanningPermissionRead": {
+        "additionalProperties": false,
+        "description": "Column 1 / Column 2 / neither. A planning permission is not an environmental permit.",
+        "properties": {
+          "column": {
+            "anyOf": [
+              {
+                "enum": [
+                  "1",
+                  "2",
+                  "neither"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Column"
+          },
+          "isEnvironmentalPermit": {
+            "const": false,
+            "title": "Isenvironmentalpermit",
+            "type": "boolean"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "permissionPredatesEiao": {
+            "title": "Permissionpredateseiao",
+            "type": "boolean"
+          },
+          "route": {
+            "anyOf": [
+              {
+                "enum": [
+                  "column1",
+                  "s16",
+                  "s12A"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Route"
+          }
+        },
+        "required": [
+          "isEnvironmentalPermit",
+          "permissionPredatesEiao",
+          "note"
+        ],
+        "title": "PlanningPermissionRead",
         "type": "object"
       },
       "ProjectModel": {
@@ -2223,6 +2853,112 @@
         "title": "SceneUpdate",
         "type": "object"
       },
+      "Schedule2Flag": {
+        "additionalProperties": false,
+        "description": "A Schedule 2 item the declared facts meet. Absent means not flagged.",
+        "properties": {
+          "item": {
+            "title": "Item",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "threshold": {
+            "$ref": "#/components/schemas/ThresholdSnapshot"
+          },
+          "triggered": {
+            "const": true,
+            "title": "Triggered",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "item",
+          "triggered",
+          "reason",
+          "threshold"
+        ],
+        "title": "Schedule2Flag",
+        "type": "object"
+      },
+      "Schedule3Read": {
+        "additionalProperties": false,
+        "description": "Schedule 3 item 1, applied to an area in hectares.",
+        "properties": {
+          "flag": {
+            "enum": [
+              "review",
+              "not_triggered",
+              "insufficient_facts"
+            ],
+            "title": "Flag",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "siteAreaHa": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Siteareaha"
+          },
+          "threshold": {
+            "$ref": "#/components/schemas/ThresholdSnapshot"
+          },
+          "triggered": {
+            "title": "Triggered",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "triggered",
+          "flag",
+          "threshold",
+          "reason"
+        ],
+        "title": "Schedule3Read",
+        "type": "object"
+      },
+      "Section44Read": {
+        "additionalProperties": false,
+        "description": "Section 4(4). A flag for a possible specification. Aggregation is not asserted.",
+        "properties": {
+          "assertedAggregation": {
+            "const": false,
+            "title": "Assertedaggregation",
+            "type": "boolean"
+          },
+          "flag": {
+            "enum": [
+              "possible_specification",
+              "not_indicated",
+              "insufficient_facts"
+            ],
+            "title": "Flag",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "flag",
+          "assertedAggregation",
+          "note"
+        ],
+        "title": "Section44Read",
+        "type": "object"
+      },
       "TerrainRead": {
         "description": "200 body of GET /api/scenes/{sceneId}/terrain (§3.4).",
         "properties": {
@@ -2406,6 +3142,78 @@
         "title": "TerrainRead",
         "type": "object"
       },
+      "ThresholdSnapshot": {
+        "additionalProperties": false,
+        "description": "One reference-file entry, copied onto the read that used it.",
+        "properties": {
+          "comparator": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comparator"
+          },
+          "effectiveDate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effectivedate"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "sourceUrl": {
+            "title": "Sourceurl",
+            "type": "string"
+          },
+          "supersededBy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supersededby"
+          },
+          "unit": {
+            "title": "Unit",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "id",
+          "unit",
+          "sourceUrl"
+        ],
+        "title": "ThresholdSnapshot",
+        "type": "object"
+      },
       "UnavailableProject": {
         "additionalProperties": false,
         "description": "A seeded project the viewer cannot draw, and why.\n\nPresent so an absent model reads as *a missing file* rather than as a\ndataset that never held the project. Both facts are true statements about\ndifferent things, and only one of them is worth acting on.",
@@ -2502,6 +3310,48 @@
         "summary": "Root",
         "tags": [
           "meta"
+        ]
+      }
+    },
+    "/api/declarations/intake": {
+      "post": {
+        "description": "Fit the declared facts. Missing facts are listed, not guessed.",
+        "operationId": "intake_api_declarations_intake_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeclarationIntake"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeclarationIntakeResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Intake",
+        "tags": [
+          "declarations"
         ]
       }
     },

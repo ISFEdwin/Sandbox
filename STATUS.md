@@ -1,7 +1,7 @@
 # STATUS
 
-**As of 18 Nov 2026.** Branch `main`, at `e196c91` (`docs: record the week's state, and commit the build plan`), seven commits ahead of
-`origin/main` (`bcec6f7`). Working tree: the 18 Nov comparison build (see §9). The measurements in §2.1 were taken at `07a4d98` on 14 Nov;
+**As of 23 Nov 2026.** Branch `main`, at `e196c91` (`docs: record the week's state, and commit the build plan`), seven commits ahead of
+`origin/main` (`bcec6f7`). The comparison build is §9 (18 Nov). The measurements in §2.1 were taken at `07a4d98` on 14 Nov;
 the suites were re-run on 18 Nov against the comparison build (265 backend, 115 frontend).
 The header previously named `07a4d98` and an untracked `PLAN.md` — both superseded by `e196c91`. Later findings are collected in §9 rather
 than scattered through the earlier text.
@@ -9,14 +9,14 @@ than scattered through the earlier text.
 What this file is: the measured state of the project — what runs today, what the chosen product is, and
 which of those requirements exist. It is not a roadmap (see [TODO.md](TODO.md)) and not a pitch (see the deck).
 
-**Main edges (ground truth, 18 Nov 2026).** The product is a broad-brush comparison tool. These five edges are the ones the demo and the next deck lead with. Deck v2 and the opening of [PLAN.md](PLAN.md) still lead with a coordination register; they are behind this section until revised.
+**Main edges (ground truth, 23 Nov 2026).** The product is a broad-brush comparison tool. These five edges are the ones the demo and the next deck lead with. Deck v2 and the opening of [PLAN.md](PLAN.md) still lead with a coordination register; they are behind this section until revised.
 
 | Edge | What it is | Where it stands |
 |---|---|---|
 | **1. Comparison across separate axes** | Two schemes, read side by side, each axis in its own units: drainage deficit and flood extent, surface heat, tide, greenery and impervious share, wind channel. No combined score and no pass/fail. | **On screen.** `POST /scenes/{id}/compare-schemes` scores A and B against one baseline and storm; `ComparisonPanel` prints A / B / B−A for seven rows and returns `combinedScore: null`. `/scenario/compare` still ranks whole scenarios separately. |
 | **2. A shared picture follows from holding the schemes** | The schemes already on the table sit in one model, so the comparison is also what each project assumed about the others. The dated register is that side effect. It is not the product the demo opens on. | Toggles, swap and compare run today. Declarations, versions, roles and tenancy do not, and they are downstream of the comparison. |
 | **3. Natural-language intervention** | A sentence such as "add a retention pond in the north" becomes a draft on the map. The site is chosen from the terrain, land cover and flood grid; the model cannot invent coordinates. The user confirms before the comparison scores it. A height or density request goes to the massing tool with an explicit scope. | **Built.** Routing is `app/agent/intent.py` (the model can raise a turn to an intervention and cannot lower one). Placement is `app/services/ai_plan.py`. Drafts stay drafts until confirm. |
-| **4. Wind channel as a comparison axis** | The channel is the least-cost corridor under the published prevailing inflow (NE / ENE / E), drawn so a toggled scheme moves it. A diagnostic speed field is the next step only if that line is too thin to read. The inflow is the Planning Department site-wind table, cited. A CFD solve stays out. | **Drawn.** The panel toggles a Cesium-clamped corridor for the scheme; the row reports first-obstruction height per scheme. `POST /ventilation/diagnostic` adds a geometric shelter-index PNG/sidecar (`DIAGNOSTIC_SHELTER_INDEX_NOT_A_SPEED`), not a velocity field. The CSDI inflow file is still not fetched. |
+| **4. Wind channel as a comparison axis** | The channel is the prevailing inflow (NE), drawn so a toggled scheme can be read against it. The inflow is the Planning Department site-wind table, cited. With the 2.5D massing on, the drawing is a coarse OpenFOAM solve around those extruded footprints. The least-cost corridor remains the fallback, and it is what the textured 3D view draws. Neither drawing is a velocity ratio or a pass/fail. | **Solved, off the request path.** `scripts/openfoam_channel/run_channel.py` runs `simpleFoam` (k-epsilon) in the image `opencfd/openfoam-run:2512` (GPL-3.0). The Foundation tree is cited and not vendored. Obstacles are the 2.5D footprints. The inlet, 2.922 m/s, is the PlanD annual 500 m NE bin midpoint (6.9095 m/s, cell 3463) times (10/500)^0.22; PlanD does not publish that 10 m speed. Sidecar `data/openfoam/channel_sidecar.json` is SOLVED, 23 Nov 2026. The compass selects the from-bearing (16 PlanD directions) and the season and height table. Each bearing is solved at its annual 500 m inlet; another table scales those speeds by the inlet ratio. The comparison row is still the geometric corridor. `POST /ventilation/diagnostic` stays a shelter index. The window also touches cells 3462, 3559 and 3560; those roses are not merged. The default corridor weight is still the AVRG73 combined 40.8% fact. |
 | **5. Screening, labelled** | Every figure says what was assumed and what is unknown. The engine is arithmetic on the schemes it was given. | The parameter card and the grounded chat do this today. |
 
 ---
@@ -109,7 +109,7 @@ The model needs the sandbox to hold a *record*, not just a *result*. Capability 
 | 1 | Simulate coordinated projects (toggle / swap / compare) | **Built** | Routes + README features |
 | 2 | Publish every assumption a run used | **Built** | `/parameter-card` |
 | 3 | Storage accounting per run | **Built** | `/ledger` |
-| 4 | Multi-hazard layers, separate axes, no combined score | **Built (partial)** | Flood, heat, sea level, ventilation present; wind as geometry is partial |
+| 4 | Multi-hazard layers, separate axes, no combined score | **Built (partial)** | Flood, heat, sea level, ventilation present; the wind channel adds a coarse OpenFOAM overlay on the 2.5D massing, off the request path |
 | 5 | **Declared inputs, signed by the declaring party** | **Not built** | No declaration object anywhere in the schema. The *consent seam* exists (`app/services/consent.py`) and the guard now reads `params.declarationId` / `declarationStatus`, but nothing writes them yet |
 | 6 | **Hash + timestamp per declaration** | **Not built** | No signing or provenance layer |
 | 7 | **Versioned baseline, queryable "as at" a date** | **Not built** | Scenarios are saved, not versioned |
@@ -288,4 +288,25 @@ Two defects found and fixed in that pass:
 
 1. The playhead wrote the new overlay URL from inside a React `setFrame` updater, which updated `SandboxViewer` while `StormPlayback` rendered. React warned and the map kept frame 0 while the readout advanced. The frame index now moves first; one effect applies the frame from committed state.
 2. Generated overlays landed outside `.gitignore`; `backend/data/rasters/comparison/` and `.../storm/` now sit with `.../run/` as transient render output.
+
+---
+
+## 10. Update — 23 Nov 2026: government-criteria fit
+
+A declaration can be read against the published gates. The output is a broad-brush fit read. It is not an environmental permit and not a section 16 decision. Primary sources stay in [the screening-criteria note](../01_research/HK_Government_Screening_Criteria_Urban_Planning.md). The product page is [docs/GOVERNMENT_CRITERIA_FIT.md](docs/GOVERNMENT_CRITERIA_FIT.md).
+
+| Surface | Where | What it says, and what it refuses to say |
+|---|---|---|
+| Intake | `POST /api/declarations/intake` · `services/government_fit.py` | `governmentFit` plus a pasteable `screeningBasisAnnex`. The route does not store a declaration |
+| Thresholds | `backend/data/reference/hk_screening_thresholds.json` | Value, unit, source URL, effective date, superseded-by. Repealed entries stay. A live entry that reuses a superseded value fails the drift guard |
+| Panel | `frontend/src/components/GovernmentFitPanel.tsx` | Beside the parameter card. One row per fact. A blank is not sent. The card leads with “Not a determination”, then Schedule 3, Schedule 2, town planning, environmental assessment, section 4(4) and HKPSG noise, then the unknowns list |
+| Liability | `docs/CODE_OF_PRACTICE.md` · `docs/SCREENING_BASIS_ANNEX.md` | What a fit assertion is. Dropping the screening label or `furtherInformation` fails `tests/test_government_fit.py` |
+
+Schedule 3 is urban development or redevelopment of more than 50 ha (L.N. 77 of 2023, commenced 30 June 2023). The 20 ha test, the 100,000-population test, the engineering-feasibility wording and P.2 do not fire. A.1 is road class only. A share of the district is converted to hectares when the district area is supplied; on this study window, 30% is not 50 ha. HKPSG Chapter 9 is a check, never a pass or a fail. 20/10/5 m stays the open-space separation.
+
+Hung Shui Kiu–Ha Tsuen is recorded as plan **S/HSK/4**, approved 29 September 2026, gazetted 9 October 2026. Zone Notes, Deep Bay overlap, receiver distances and section 5(9)–(11) were not read. Those gaps stay in `furtherInformation`.
+
+Checked in the running app on 23 Nov: 60 ha and a trunk road returned Schedule 3 **Review** and Schedule 2 **A.1**, with the label and the unknowns list on the panel. `tests/test_government_fit.py` (24) and `frontend/src/api/governmentFit.test.ts` (9) pass. §2.1’s full-suite counts were not re-run for this pass.
+
+Still open, and not claimed here: G4 has no map layer; G7 has not copied the statutory texts into the repo; G8 has not read the site-specific Notes; G9 has not edited the deck. A1 is still unmet: the panel does not store a declaration.
 

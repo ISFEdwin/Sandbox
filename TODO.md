@@ -219,6 +219,66 @@ register thesis to survive a judging panel. Full dates and eligibility in
 
 ---
 
+## G. Government criteria fit — broad-brush screen — added 23 Nov 2026
+
+These do not replace A–F. They make the "labelled screening" edge legible to a government reviewer: a declaration can be triaged against the statutory gates it appears to touch, with an explicit list of what is still unknown. Full statutory detail and primary sources are in
+[the screening-criteria research note](../01_research/HK_Government_Screening_Criteria_Urban_Planning.md).
+
+**The rule for this section:** the output is a **broad-brush fit read, not a statutory determination**. Every result carries the screening label, the assumption register and a `furtherInformation` list. If a threshold needs a fact we do not hold (zone, road class, receiver distance, Deep Bay buffer status), we say so rather than guessing.
+
+### Criteria to encode
+
+| Gate | Broad-brush test | Product read |
+|---|---|---|
+| EIAO Sch. 3 | Urban development / redevelopment site **>50 ha** | Flag schedule 3 review. Do **not** use 20 ha or 100,000 population. |
+| EIAO Sch. 2 A.1 | Expressway / trunk / primary / district distributor road — no length threshold | Flag a Schedule 2 component from road class alone. |
+| EIAO Sch. 2 C.1 / C.2 | Reclamation >5 ha; or >1 ha within 500 m seaward / 200 m landward specified area / 100 m residential | Flag; ask for reclamation area and receiver distances. |
+| EIAO Sch. 2 F.1 / F.2 | STP >15,000 m³/day; or >5,000 m³/day within 200 m of sensitive uses | Flag from declared drainage assumptions. |
+| EIAO Sch. 2 I.1 | Channel width more than 100 m, or located less than 300 m from an area named in I.1(b) | Flag from the drainage axis; do not invent the distances or the receiving area. |
+| EIAO Sch. 2 P.1 | Residential / recreational use inside Deep Bay Buffer Zone 1 or 2 — no size threshold | Ask for buffer-zone status. The repealed P.2 (not less than 2,000 flats, and not served by public sewerage) is not a test. |
+| EIAO Sch. 2 Q.1 / Q.2 | Works in country park / SSSI / conservation area / marine park / cultural heritage site; rock-cavern portal <100 m from receivers | Sensitive-area catch-all flag, with the long exemption list left to EPD. |
+| EIAO s. 4(4) | Contiguous projects by the same / associated persons that appear split to evade the Ordinance | Flag phasing / neighbour combinations for aggregation review; never assert aggregation. |
+| Cap. 131 OZP Notes | Column 1 always permitted; Column 2 needs s. 16 permission; neither needs s. 12A | Zone-level triage, read from the HSK–HT OZP Notes, not guessed from land use. |
+| TPB s. 16 EA triggers | May cause impacts; pollution-sensitive; or major / large-scale | Advisory "EA may be required" for CDA, residential, sensitive uses, batching / asphalt plants, slaughterhouses. |
+| HKPSG Ch. 9 Table 1.3 | Residential buffers 300/180/120 m from trunk / primary / district-local roads (50/40/30 m with screening); NEF 25 | Advisory only, never pass/fail. 20/10/5 m is the open-space separation (trunk and primary / district / local), not a residential buffer. |
+| Post-screen criteria | Amended EIAO TM from 30 Jun 2023 (transition ended 30 Jun 2025); new AQOs from 11 Apr 2025 applied at decision date | Stated as "as at" inputs in the assumption register. |
+
+- [x] **G1 `[P0]` Write `docs/GOVERNMENT_CRITERIA_FIT.md`.** One page: each product axis (drainage, wind/AVA, massing/SBDG, attribution) → the statutory gate it can inform → what our screening number can and cannot say.
+      *Done when:* a reviewer can read it beside the parameter card and see exactly where the tool stops.
+      **Met (23 Nov 2026).** `docs/GOVERNMENT_CRITERIA_FIT.md`.
+
+- [x] **G2 `[P0]` Add broad-brush triage to declaration intake.** Given site area, zone, road class, reclamation / STP / drainage inputs and receiver distances, return a `governmentFit` object: `schedule3`, `schedule2[]`, `planningPermission`, `eaMayBeRequired`, `assumptions[]`, `furtherInformation[]`, `notADetermination: true`.
+      *Done when:* tests cover a >50 ha flag, a 30%-of-district declaration that is **not** 50 ha, a road-class-only flag, and assertions that the obsolete 20 ha / 100,000 population / P.2 / 20-10-5 m residential rules do not fire.
+      *Why:* this is the "fitting government criteria" claim. Without the unknowns list it is an overclaim, and E2 becomes a lie.
+      **Met (23 Nov 2026).** `POST /api/declarations/intake` and `tests/test_government_fit.py`. The same read is the Criteria fit panel beside the parameter card (`frontend/src/components/GovernmentFitPanel.tsx`). A blank field is not sent. The read is not a statutory determination.
+
+- [x] **G3 `[P0]` Put the thresholds in reference data, not prose.** `backend/data/reference/hk_screening_thresholds.json`, each entry with value, unit, source URL, effective date and superseded-by field.
+      *Done when:* G2 reads from the file, D6 can point at it, and a drift test fails if a superseded value reappears.
+      **Met (23 Nov 2026).** G2 reads the file. `assert_no_superseded_value_is_live` fails if a superseded value is put back on a live entry, or if a repealed entry is deleted. D6 can point at the same file; the clause texts themselves are still G7.
+
+- [ ] **G4 `[P1]` HKPSG buffer advisory layer.** Table 1.3 residential road and rail buffers plus the NEF 25 rule, shown as "check against HKPSG", never as compliance.
+      *Done when:* a missing receiver distance produces `furtherInformation`, not a silent pass.
+      *23 Nov:* the fit read and the Criteria fit panel already print that check, and a missing distance is `furtherInformation`. G4 stays open because there is no map layer.
+
+- [x] **G5 `[P1]` Close the liability loop in A4 and E2.** Code of Practice states what a fit assertion is and is not; every output keeps the label plus the unknowns list.
+      *Done when:* removing either the label or the unknowns list fails a test.
+      **Met (23 Nov 2026).** `docs/CODE_OF_PRACTICE.md` states the fit assertion. A4's remaining sections are still open. Dropping the label or `furtherInformation` fails `tests/test_government_fit.py`.
+
+- [x] **G6 `[P1]` B5 gains a screening-basis annex.** One page alongside the AVA SVR/LVR table and attribution annex: gate flags, thresholds applied, sources, "as at" dates, further information.
+      *Done when:* a consultant can paste it into a s. 16 submission without editing a number.
+      **Met (23 Nov 2026).** `screeningBasisAnnex` is rendered from the fit and the threshold file. `docs/SCREENING_BASIS_ANNEX.md` describes the page. B5's other templates are still open.
+
+- [ ] **G7 `[P1]` Extend D6 with the current statutory texts.** L.N. 77/2023, the consolidated Cap. 499 Schedules 2/3, TPB s. 16 Guidance Notes (Oct 2026), HKPSG Ch. 9, and the EPD AQO notice — with the old 20 ha / P.2 material marked superseded, not deleted.
+      *Done when:* every threshold in G3 has a primary-source citation and an effective date.
+
+- [ ] **G8 `[P2]` Site-specific follow-ups before any HSK–HT claim.** The plan identity is recorded (S/HSK/4, approved 29 September 2026, gazetted 9 October 2026). Still to read: zone-by-zone Notes; whether the site intersects Deep Bay Buffer Zones 1/2; which receiver distances are actually held; the s. 5(9)–(11) direct-EP conditions; and any Schedule 2/3 amendment after the 30 June 2023 point in time.
+      *Done when:* answers are recorded in the research note with citations and the `furtherInformation` list shrinks on evidence, not assumption.
+
+- [ ] **G9 `[P1]` Keep the competition framing honest.** Add one line to the deck's approval-path slide: two gates (EIAO and town planning), broad-brush fit read only.
+      *Done when:* F5 still holds — no application deck upgrades G2 to a statutory screening decision.
+
+---
+
 ## The one-line version
 
 One real declaration (A1), attribution defined (A2), a company (A5) and a Code of Practice (A4) — by mid-December.
@@ -226,4 +286,8 @@ Everything else is downstream of those four.
 
 **Competition overlay (18 Nov):** a 4-person entry team, the CCMF milestone budget, honest attribution claims, and a
 fresh suite run — before 1 Dec. See §F.
+
+**Government-criteria overlay (23 Nov):** G1–G3 and G5–G6 are met. The Criteria fit panel sits beside the parameter
+card and reads `POST /api/declarations/intake`. The read is not a statutory determination. G4 (no map layer), G7, G8
+and G9 are still open. G8 still comes before any site-specific HSK–HT claim. See §G.
 

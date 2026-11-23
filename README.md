@@ -10,8 +10,9 @@ shared picture of what each project assumed about the others. The dated register
 is the product. The five edges, and where each one stands, are the ground truth in [STATUS.md](STATUS.md).
 
 > **Status:** the comparison runs locally: two schemes on seven rows, each in its own units, with no combined score.
-> The wind corridor is drawn, the storm plays hour by hour, and the gauge is a labelled reading. The shared record
-> around the comparison is not built. See [STATUS.md](STATUS.md) and [TODO.md](TODO.md).
+> The wind corridor is drawn, the storm plays hour by hour, and the gauge is a labelled reading. Criteria fit, beside
+> the parameter card, reads typed facts against the published gates. That read is not a statutory determination. The
+> shared record around the comparison is not built. See [STATUS.md](STATUS.md) and [TODO.md](TODO.md).
 
 ## The problem it addresses
 
@@ -46,7 +47,8 @@ Three specific failures, not one general complaint:
 - **One knob at a time.** Rainfall at ±20% re-runs the ledger and reports which assumption moved the deficit.
 
 Screening only. It sits in front of the statutory hydraulic assessment; it does not replace it, and every output is
-labelled as derived rather than certified.
+labelled as derived rather than certified. Criteria fit is the same kind of label for the published gates: a fit
+read of the facts you type, not a permit and not a planning decision.
 
 ## Who it is for
 
@@ -68,6 +70,7 @@ planning notes rather than here, because this repository is public.
 - **Natural-language interventions:** a core feature. Describe one in the chat (for example, a park or a retention pond). It shows up as a draft grounded in the site's own grids, and you confirm it before it is placed. A details card asks for each value the run uses, and you either enter your own or let the AI estimate it. Estimated values are labelled as such.
 - **Grounded chat:** ask about a run and get a structured answer card covering what the run shows, what to do, confidence and caveats. Every number in it is checked against the run's outputs.
 - **Stats and parameter card:** a live summary after each run, plus a reference table of the run's assumptions, including what the model doesn't know.
+- **Criteria fit:** type the facts you have (site area, share of the district, road class, and the drainage, planning and noise facts behind one disclosure). Blank fields are not sent. The panel returns which published gates those facts appear to touch, with the unknowns listed. It is a broad-brush fit read, not an environmental permit and not a section 16 decision.
 - **LLM settings:** set the provider, base URL and model in the app. The API key is never shown back.
 
 ## User flow
@@ -78,6 +81,7 @@ planning notes rather than here, because this repository is public.
 4. Set the sliders and press **Run**.
 5. Read the stats panel, then ask the chat why the numbers changed or what to try next.
 6. Adjust or delete interventions in the Interventions panel and run again to compare.
+7. Open **Criteria fit**, type only the facts you hold, and press **Read fit**. The card says which gates those facts appear to touch, and what is still unknown.
 
 ## Where GenAI is used
 
@@ -98,7 +102,7 @@ Telling a question apart from an intervention request is done by fixed rules, no
 
 ## API surface
 
-Routes are grouped under `/scenes/{scene_id}`. The ones that matter for the register direction:
+Most routes are grouped under `/scenes/{scene_id}`. Criteria fit is the exception: it takes the facts in the request and does not attach them to a scene. The ones that matter for the register direction:
 
 | Route | Purpose |
 |---|---|
@@ -107,6 +111,7 @@ Routes are grouped under `/scenes/{scene_id}`. The ones that matter for the regi
 | `GET /scenes/{id}/scenarios` | List saved scenarios |
 | `GET /scenes/{id}/ledger` | Storage ledger for the run |
 | `GET /scenes/{id}/parameter-card` | Every assumption the run used, plus what is unknown |
+| `POST /declarations/intake` | Broad-brush government-criteria fit for the facts you send. Does not store a declaration. Not a statutory determination |
 | `GET /scenes/{id}/sea-level`, `/heat-field`, `/ventilation/corridors` | Individual hazard layers |
 | `GET/POST /scenes/{id}/pins`, `/pins/{feature_id}/pin` | Pin and unpin features across runs |
 | `POST /chat`, `/chat/stream` | Grounded chat over a run |
@@ -166,6 +171,8 @@ CI runs the same checks (`.github/workflows/ci.yml`).
 - Some land-cover and soil inputs are estimated rather than surveyed; the parameter card says which.
 - Single-tenant file store. It will not survive a second concurrent customer.
 - Planned projects can be toggled, but construction phasing and overlapping timelines are not yet modelled.
+- Criteria fit uses the facts you type and the thresholds in `backend/data/reference/hk_screening_thresholds.json`. It does not decide a permit or a planning permission. Hung Shui Kiu–Ha Tsuen is named as plan S/HSK/4 only; the zone notes and any Deep Bay overlap were not read.
+- The panel does not store a declaration. A dated declaration record is still unbuilt.
 
 ## Licence and attribution
 

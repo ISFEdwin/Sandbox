@@ -32,6 +32,7 @@ import SlidersPanel from './components/SlidersPanel'
 import StatsPanel from './components/StatsPanel'
 import StormPlayback from './components/StormPlayback'
 import WeatherGauge from './components/WeatherGauge'
+import GovernmentFitPanel from './components/GovernmentFitPanel'
 import ParameterCardPanel from './components/ParameterCardPanel'
 import InterventionsPanel from './components/InterventionsPanel'
 import ViewButtons from './components/ViewButtons'
@@ -174,6 +175,10 @@ export default function App() {
                 the toggled projects; deleting a row unpins it. */}
             <InterventionsPanel />
             <StatsPanel />
+            {/* Declared facts against the published gates. Collapsed, and it
+                sits with the parameter card: one says what a run assumed, the
+                other says which gates those facts appear to touch. */}
+            <GovernmentFitPanel />
             {/* The brief's section 2 table. Collapsed by default: a reference
                 table, not a status display, and it answers "what should I
                 distrust about this result" rather than "what is happening". */}
