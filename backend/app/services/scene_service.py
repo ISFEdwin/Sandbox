@@ -130,6 +130,13 @@ def _resolve_overlay_url(doc: dict[str, Any], key: str) -> str | None:
     rel = doc.get(key)
     if not rel:
         return None
+    # Stored paths can carry Windows separators (`rasters\heatmap_hsk.png`).
+    # `public_url` normalises them, but the existence check below happens first:
+    # on POSIX a backslash is a legal filename character, so the file is simply
+    # "missing" on macOS and `os.stat` raises OSError [Errno 22] on Linux, which
+    # surfaces as a 500 from GET /api/scenes/{id}. Normalise before touching the
+    # filesystem.
+    rel = rel.lstrip("/").replace("\\", "/")
     absolute = settings.data_dir / rel
     if not absolute.exists():
         return None
@@ -148,7 +155,7 @@ def _resolve_model_3d_url(doc: dict[str, Any], key: str) -> str | None:
     rel = doc.get(key)
     if not rel:
         return None
-    rel = rel.lstrip("/")
+    rel = rel.lstrip("/").replace("\\", "/")
     # Accept legacy full path "model/city_model/..." or bare "city_model/..."
     if rel.startswith("model/"):
         rel = rel[len("model/"):]
@@ -488,6 +495,13 @@ def project_models() -> tuple[list[ProjectModel], list[Any]]:
         name = doc.get("name") or project_id
         model_rel = doc.get("model")
         footprint_rel = doc.get("footprint")
+        # Windows separators are tolerated here for the same reason as
+        # _resolve_overlay_url: on Linux `os.stat` on a backslash path raises
+        # OSError rather than returning "absent".
+        if model_rel:
+            model_rel = model_rel.replace("\\", "/")
+        if footprint_rel:
+            footprint_rel = footprint_rel.replace("\\", "/")
         missing: list[str] = []
         if not model_rel:
             missing.append("model")

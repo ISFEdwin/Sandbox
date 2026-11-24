@@ -27,7 +27,13 @@ REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="${APP_NAME:-sandbox-api-t1}"
 RESOURCE_GROUP="${RESOURCE_GROUP:-sandbox-rg}"
 PLAN_NAME="${PLAN_NAME:-sandbox-plan}"
-LOCATION="${LOCATION:-southeastasia}"
+# Azure for Students applies a "Allowed resource deployment regions" policy to
+# the whole subscription: only italynorth, francecentral, belgiumcentral,
+# germanywestcentral and southafricanorth are permitted at all. On top of that,
+# App Service quota is zero in most of them -- francecentral,
+# germanywestcentral and the others report "Current Limit (B1 App Service
+# instances): 0" -- so italynorth is the one that actually provisions.
+LOCATION="${LOCATION:-italynorth}"
 SKU="${SKU:-B1}"
 PYTHON_VERSION="${PYTHON_VERSION:-3.13}"
 FRONTEND_ORIGIN="${FRONTEND_ORIGIN:-https://sandbox-azure-five.vercel.app}"
@@ -61,6 +67,10 @@ rm -f "$ZIP"
 # nested __pycache__ needs the second one.
 EXCLUDES=(
   ".env"
+  # Runtime UI override persisted to the data store. It holds the operator's own
+  # vendor key, is gitignored, and must never travel in a deploy payload: the
+  # public demo is meant to run the keyless deterministic fallback.
+  "data/llm_config.json"
   ".venv/*"
   "*/.venv/*"
   ".venv313/*"
@@ -69,8 +79,12 @@ EXCLUDES=(
   "*.pyc"
   ".pytest_cache/*"
   "*/.pytest_cache/*"
+  # tests/ is excluded, scripts/ is NOT: the API imports scripts as top-level
+  # modules (`from _overlay_common import ...`, `from make_wetgrid import ...`
+  # in app/services/run_service.py) by putting that directory on sys.path. An
+  # earlier exclusion of scripts/* failed at startup with
+  # ModuleNotFoundError: No module named '_overlay_common'.
   "tests/*"
-  "scripts/*"
   "*.log"
 )
 
@@ -89,10 +103,26 @@ done
 
 say "Payload: $(du -h "$ZIP" | cut -f1) ($(unzip -l "$ZIP" | tail -1 | awk '{print $2}') files)"
 
-if unzip -l "$ZIP" | grep -qE '(^|/)\.env$'; then
-  echo "Refusing to deploy: .env is in the zip (it contains credentials)." >&2
+# `unzip -l | grep -q` is unsafe here: -q exits at the first match, unzip takes
+# SIGPIPE, and `set -o pipefail` then reports the whole pipeline as failed even
+# though the pattern matched. A here-string reads the listing once instead.
+LISTING="$(unzip -l "$ZIP")"
+
+if grep -qE '(^|/)\.env$|data/llm_config\.json$' <<<"$LISTING"; then
+  echo "Refusing to deploy: .env or data/llm_config.json is in the zip (credentials)." >&2
   exit 1
 fi
+
+# The API imports several top-level modules out of scripts/ at startup, so a
+# packaging rule that drops that directory produces a container that dies with
+# ModuleNotFoundError before uvicorn binds. Check the few that matter instead of
+# discovering it from a failed cold start.
+for required in "app/main.py" "scripts/_overlay_common.py" "scripts/make_wetgrid.py"; do
+  if ! grep -qE "[[:space:]]${required}$" <<<"$LISTING"; then
+    echo "Refusing to deploy: ${required} is missing from the zip." >&2
+    exit 1
+  fi
+done
 
 if [ "$DRY_RUN" = "1" ]; then
   say "DRY_RUN=1: stopping before any Azure call."
@@ -102,17 +132,29 @@ fi
 # --------------------------------------------------------------------------- #
 # Infrastructure
 # --------------------------------------------------------------------------- #
-say "Resource group ${RESOURCE_GROUP} (${LOCATION})"
-az group create --name "$RESOURCE_GROUP" --location "$LOCATION" --output none
+say "Resource group ${RESOURCE_GROUP}"
+if [ "$(az group exists --name "$RESOURCE_GROUP")" = "true" ]; then
+  # A resource group's own location is fixed at creation and is only metadata
+  # about where its records live; the resources inside can be in any permitted
+  # region. Re-creating it with a different --location is an error, so an
+  # existing one is reused rather than fought with.
+  echo "    already exists, reusing it"
+else
+  az group create --name "$RESOURCE_GROUP" --location "$LOCATION" --output none
+fi
 
-say "App Service plan ${PLAN_NAME} (${SKU}, Linux)"
-az appservice plan create \
-  --name "$PLAN_NAME" \
-  --resource-group "$RESOURCE_GROUP" \
-  --location "$LOCATION" \
-  --is-linux \
-  --sku "$SKU" \
-  --output none
+say "App Service plan ${PLAN_NAME} (${SKU}, Linux, ${LOCATION})"
+if az appservice plan show --name "$PLAN_NAME" --resource-group "$RESOURCE_GROUP" >/dev/null 2>&1; then
+  echo "    already exists, reusing it"
+else
+  az appservice plan create \
+    --name "$PLAN_NAME" \
+    --resource-group "$RESOURCE_GROUP" \
+    --location "$LOCATION" \
+    --is-linux \
+    --sku "$SKU" \
+    --output none
+fi
 
 say "Web app ${APP_NAME} (Python ${PYTHON_VERSION})"
 if az webapp show --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" >/dev/null 2>&1; then
