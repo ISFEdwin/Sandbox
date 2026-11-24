@@ -1,10 +1,10 @@
 # STATUS
 
-**As of 23 Nov 2026.** Branch `main`, at `e196c91` (`docs: record the week's state, and commit the build plan`), seven commits ahead of
-`origin/main` (`bcec6f7`). The comparison build is §9 (18 Nov). The measurements in §2.1 were taken at `07a4d98` on 14 Nov;
-the suites were re-run on 18 Nov against the comparison build (265 backend, 115 frontend).
-The header previously named `07a4d98` and an untracked `PLAN.md` — both superseded by `e196c91`. Later findings are collected in §9 rather
-than scattered through the earlier text.
+**As of 24 Nov 2026.** Branch `main`, at `40b7d3f` (`Fix the three faults that only appear on Linux hosting.`), level with
+`origin/main`. The comparison build is §9 (18 Nov), the government-criteria fit is §10 (23 Nov), and the public deployment is
+§11 (24 Nov). The measurements in §2.1 were taken at `07a4d98` on 14 Nov and have not been re-run in full; `pytest -q` was
+run again on 24 Nov during the deployment work and gave 303 passed, with the CI-style loop not re-run (§11.3). Later findings
+are collected in §9–§11 rather than scattered through the earlier text.
 
 What this file is: the measured state of the project — what runs today, what the chosen product is, and
 which of those requirements exist. It is not a roadmap (see [TODO.md](TODO.md)) and not a pitch (see the deck).
@@ -317,4 +317,77 @@ Wind and heat, 24 Nov: the compass sets a 10 m speed. PlanD follows the selected
 Checked again on 24 Nov, in the running app: the closed panel is the four rows, with the comparison and above the storm. 60 ha and a trunk road put Schedule 3 **Review**, Schedule 2 **A.1**, plan **S/HSK/4** and the screening label on the EIA row. The unknowns list stayed closed. An empty read stayed labelled and did not place the site in Deep Bay. The same two test files were run again (24 and 9). §2.1’s full-suite counts were not re-run.
 
 Still open, and not claimed here: G4 has no map layer; G7 has not copied the rest of the statutory texts into the repo; G8 has not read the site-specific Notes; G9 has not edited the deck. A1 is still unmet: the panel does not store a declaration. B11 is still partial: the corridor cost is geometry, and the coarse channel is not solved per scheme.
+
+---
+
+## 11. Update — 24 Nov 2026: the app is publicly deployed
+
+The comparison now runs on the public internet, not only on a laptop. Nothing in §3 changed: this is a deployment, not a
+capability. It moves no register row, and A1 is still unmet.
+
+| | |
+|---|---|
+| App | <https://sandbox-azure-five.vercel.app> |
+| API | <https://sandbox-api-t1.azurewebsites.net> (`/health`, `/docs`) |
+| Frontend | Vercel, static Vite build run from the repository root |
+| Backend | Azure App Service, Linux, Python 3.13, B1, `italynorth` |
+| Commits | `0364159` (Vercel and Render config), `2c7f91e` (Azure deploy), `40b7d3f` (the Linux-only faults) |
+
+### 11.1 Why it is split across two hosts
+
+The API cannot run on a serverless host. The unzipped dependency set is ~265 MB against Vercel Functions' 250 MB package
+limit, and the file store writes rasters to disk between requests. So the frontend is static and the backend is a
+container-backed web app. The frontend build runs from the repo root rather than `frontend/` because
+`frontend/src/api/intentVocabulary.test.ts` imports `contracts/intent_vocabulary.json` from the root, and `.vercelignore`
+keeps the ~476 MB tile set out of the upload. `render.yaml` is kept as an unused free-plan alternative; it is not the live
+deployment and its filesystem is ephemeral.
+
+### 11.2 Three faults that only Linux exposed
+
+All three passed on macOS and failed on the deployed host. That is the reason to keep a standing deployment, and the
+reason the numbers in §2.1 were never a substitute for one.
+
+1. **Windows separators in the committed paths.** `heatmap_path` and its siblings are stored as
+   `rasters\heatmap_hsk.png`. `public_url()` normalised them, but the existence check ran first: on POSIX a backslash is a
+   legal filename character, so macOS quietly returned "absent" and Linux raised `OSError [Errno 22]`, turning
+   `GET /api/scenes/{id}` into a **500**. Fixed in `services/scene_service.py` for both the overlay and the project
+   resolvers; the route went 500 → 200.
+2. **The operator's model settings travelled in the payload.** `data/llm_config.json` is gitignored but present in a
+   working tree, so a zip deploy shipped it — and with it a live vendor key — into the container. `/health` reported
+   `configured: true, baseUrl: api.deepseek.com`. It is now excluded from the payload, refused by the preflight, and
+   removed on boot unless `ALLOW_LLM_OVERRIDES=1`. `/health` reports `provider: heuristic` again. **The key was exposed
+   and should be treated as burned.**
+3. **Startup sequencing.** Oryx installs into `antenv` and only activates it on its own default path, so a custom command
+   got `uvicorn: not found` (exit 127). Separately, `app/main.py` mounts `/static/model` only if the directory exists at
+   import time, so seeding 476 MB before `exec` both overran the startup probe and risked skipping the mount entirely —
+   tiles would have 404'd. The directory is created first and the copy runs detached behind a marker.
+
+A fourth fault was in the packaging, not the app: `deploy_azure.sh` excluded `scripts/`, which the API imports as
+top-level modules (`from _overlay_common import ...`). The container died with `ModuleNotFoundError` before binding. The
+script now keeps that directory and asserts `app/main.py` and two `scripts/` modules are in the zip before uploading.
+
+### 11.3 What was verified, and on what
+
+- **End to end, from the deployed page.** The browser's own resource timeline, read after load, shows every request the
+  app makes returning 200: the scene, terrain, plans, parameter card, weather, pins, both tilesets, the DEM raster, and
+  real tile payloads (`0composite0.cmpt`, `0material0_0.b3dm`). The 3D district renders.
+- **Cross-origin.** A credentialed preflight from the Vercel origin returns `200` with
+  `access-control-allow-origin: https://sandbox-azure-five.vercel.app`. The wildcard would be rejected by the browser,
+  so the origin is listed explicitly.
+- **Backend suite.** `pytest -q` on 24 Nov: **303 passed**, 86 s, on Python 3.13.12. This is one runner, not both: the
+  CI-style per-file loop (§2.1) was **not** re-run.
+- **Not verified:** any load test, any second visitor, mobile layout, Safari, or a run left in the store by someone else.
+
+### 11.4 Constraints of this deployment
+
+| Constraint | Effect |
+|---|---|
+| One worker, file store, no auth | A visitor's run writes to the same store another visitor reads. It is a demo endpoint, not a tenancy boundary |
+| Keyless provider | Chat answers from templates and labelled heuristics; the AI path is not exercised in public |
+| Student credit | B1 is ~US$13/month against a US$100 credit, so roughly seven months of runway |
+| Region `italynorth` | Azure for Students permits five regions and appears to carry App Service quota in one. `francecentral` and `germanywestcentral` reject a B1 plan. ~200 ms from Hong Kong |
+| Python 3.13, not 3.14 | CI runs 3.14; the deployed runtime is 3.13, the version the local suites ran on |
+
+The first row is the one that matters for §3: being reachable does not make the store multi-tenant, and it does not make
+a declaration storable. Rows 5–15 remain "Not built".
 

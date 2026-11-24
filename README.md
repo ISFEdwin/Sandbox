@@ -17,6 +17,20 @@ This is the ground truth for the product. Feature status lives in [STATUS.md](ST
 - Incremental planning
 - Coordination
 
+## Live instance
+
+| | |
+|---|---|
+| App | <https://sandbox-azure-five.vercel.app> |
+| API | <https://sandbox-api-t1.azurewebsites.net> (`/health`, `/docs`) |
+
+No login, no key required. The backend runs the keyless fallback, so the chat answers from template cards and the
+rule-based parser rather than a hosted model — the same fallback described under
+[Where GenAI is used](#where-genai-is-used). Every figure on screen is screening output, not a statutory assessment.
+
+The API is on a student credit and is not sized for load: one worker, a file store with no tenancy boundary, and a
+region in Europe (see [Deployment](#deployment) for why). Treat it as a demo endpoint.
+
 A 3D comparison tool for Hung Shui Kiu / Ha Tsuen (HSK/HT) in the Northern Metropolis. Place the developments that are
 actually planned for a district, turn them on and off, add one in a sentence, swap one for another, change rainfall and
 temperature, and see what each combination does — drainage, surface heat, tide, greenery, and the wind channel — in
@@ -26,7 +40,7 @@ The prototype was built for Hack4SDG (Team 1007). Holding those schemes in one m
 shared picture of what each project assumed about the others. The dated register is that consequence. The comparison
 is the product.
 
-> **Status:** the comparison runs locally: two schemes on seven rows, each in its own units, with no combined score.
+> **Status:** the comparison runs, in public: two schemes on seven rows, each in its own units, with no combined score.
 > The wind corridor is drawn, the storm plays hour by hour, and the gauge is a labelled reading. Criteria fit sits
 > with the comparison: four rows for air ventilation, sustainable building design, drainage and the EIA Ordinance.
 > That read is a broad-brush fit read, not a statutory determination. The shared record around the comparison is not
@@ -156,6 +170,56 @@ cp .env.local.example .env.local
 npm run dev
 ```
 
+## Deployment
+
+Two services, because the API cannot run on a serverless host. The unzipped Python dependency set is ~265 MB against
+Vercel Functions' 250 MB package limit, and the file store writes rasters to disk between requests. So the frontend is
+static and the backend is a container-backed web app.
+
+| Piece | Host | Config |
+|---|---|---|
+| Frontend | Vercel, built from the repo root | `vercel.json`, `.vercelignore` |
+| Backend | Azure App Service (Linux, Python 3.13, B1) | `scripts/deploy_azure.sh`, `backend/startup.sh` |
+
+The frontend build runs from the repository root, not `frontend/`, because `frontend/src/api/intentVocabulary.test.ts`
+imports `contracts/intent_vocabulary.json` from the root. `.vercelignore` keeps the ~476 MB of 3D tiles out of the
+upload.
+
+Deploy the API:
+
+```bash
+brew install azure-cli && az login
+LOCATION=italynorth PLAN_NAME=<your-plan> bash scripts/deploy_azure.sh
+SKIP_ASSETS=1 bash scripts/deploy_azure.sh   # code-only redeploy; tiles stay on /home
+```
+
+Point the frontend at it, then redeploy:
+
+```bash
+vercel env add VITE_API_BASE_URL production   # https://<app>.azurewebsites.net/api
+vercel deploy --prod
+```
+
+That value needs the `/api` suffix. The default is same-origin `/api` because the Vite dev server proxies it, so a bare
+origin produces `404`s on every request — the app reports "Could not load the scene".
+
+Three things `backend/startup.sh` handles that are easy to get wrong on this host, each of which produced a failed
+deploy first:
+
+- Dependencies are installed into `antenv`, and a custom startup command does not get it on `PATH`. It is sourced
+  explicitly; without that, `uvicorn` is not found.
+- With build automation on, the code is extracted to `/tmp`, which is ephemeral. `DATA_DIR` and `MODEL_DIR` are pinned
+  to `/home` (10 GB on B1) and seeded additively behind a marker, so generated overlays survive a redeploy.
+- `app/main.py` mounts `/static/model` only if the directory exists at import time. The directory is created before
+  `uvicorn` starts and the 476 MB copy runs detached, or the mount is silently skipped and every tile 404s.
+
+Region: App Service is `italynorth`. An Azure for Students subscription carries a policy permitting only five regions,
+and appears to carry zero App Service quota in all but Italy North — `francecentral` and `germanywestcentral` reject a
+B1 plan outright. Expect ~200 ms latency from Hong Kong.
+
+`render.yaml` is an unused alternative that deploys the API to Render's free plan; it is kept because the free plan
+needs no card, but it is not the live deployment, and its filesystem is ephemeral.
+
 ## Configuration
 
 - `backend/.env`: the chat model is optional. Set `ANTHROPIC_API_KEY`, or point `LLM_BASE_URL`/`LLM_API_KEY`/`LLM_MODEL` at an OpenAI-compatible endpoint. Without a model, chat falls back to template answers that are labelled as such.
@@ -171,6 +235,9 @@ backend/model/     3D models (city tiles, terrain, station, park)
 backend/tests/     pytest suite
 frontend/src/      viewer, panels and state
 frontend/scripts/  end-to-end verification scripts (npm run verify:*)
+scripts/           deploy_azure.sh, the API deploy
+backend/startup.sh Azure startup command (venv, persistent dirs, tile seed)
+vercel.json        frontend build, run from the repo root
 ```
 
 ## Checks
@@ -191,6 +258,7 @@ CI runs the same checks (`.github/workflows/ci.yml`) on Node.js 24 actions. The 
 - Planned projects can be toggled, but construction phasing and overlapping timelines are not yet modelled.
 - Criteria fit uses the facts you type and the thresholds in `backend/data/reference/hk_screening_thresholds.json`. It does not decide a permit or a planning permission. Hung Shui Kiu–Ha Tsuen is named as plan S/HSK/4 only; the zone notes and any Deep Bay overlap were not read.
 - The panel does not store a declaration. A dated declaration record is still unbuilt.
+- The live instance runs one worker against a file store, with no authentication and no tenancy boundary. It is a demo, not a deployment: anything a visitor generates is written to the same store a visitor reads from.
 
 ## Licence and attribution
 
