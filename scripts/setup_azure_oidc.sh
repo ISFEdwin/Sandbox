@@ -16,7 +16,11 @@
 #     publish settings for one app; it has no business touching anything else.
 #   * a federated credential pinned to a subject. The subject is what stops any
 #     other repository, or any branch, from exchanging a token for this identity:
-#       repo:Edw1n-F/Sandbox:ref:refs/heads/main
+#       repo:<owner>/<repo>:ref:refs/heads/main
+#     The slug is read from `gh repo view`, so it follows the repository if it is
+#     renamed. It has to: GitHub mints the OIDC subject from the current name,
+#     and a credential pinned to the old one silently stops matching after a
+#     rename -- the deploy fails at azure/login with no hint that a name changed.
 #     A pull request runs `ci` but cannot deploy, because its ref is not main.
 #   * three repository *variables* (not secrets). Client id, tenant id and
 #     subscription id are not credentials on their own; they only name the
@@ -30,10 +34,13 @@
 #   bash scripts/setup_azure_oidc.sh
 #
 # Overridable:
-#   REPO_SLUG=Edw1n-F/Sandbox APP_NAME=sandbox-api-t1 RESOURCE_GROUP=sandbox-rg
+#   REPO_SLUG=ISFEdwin/Sandbox APP_NAME=sandbox-api-t1 RESOURCE_GROUP=sandbox-rg
 set -euo pipefail
 
-REPO_SLUG="${REPO_SLUG:-Edw1n-F/Sandbox}"
+# The repository is the one this checkout points at, not a hardcoded name: it
+# has already been renamed once (Edw1n-F/Sandbox -> ISFEdwin/Sandbox), and the
+# OIDC subject must name the current one or the trust never matches.
+REPO_SLUG="${REPO_SLUG:-$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || echo ISFEdwin/Sandbox)}"
 APP_DISPLAY_NAME="${APP_DISPLAY_NAME:-sandbox-github-deploy}"
 APP_NAME="${APP_NAME:-sandbox-api-t1}"
 RESOURCE_GROUP="${RESOURCE_GROUP:-sandbox-rg}"

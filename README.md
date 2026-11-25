@@ -211,7 +211,8 @@ done:
 | Frontend | push to `main` | Vercel's Git integration: builds the pushed commit, publishes to production, and gives every pull request a preview URL |
 | Backend | `ci` passes on `main` | `.github/workflows/deploy-api.yml` packages `backend/` with the same rules as `scripts/deploy_azure.sh` and zip-deploys it |
 
-Frontend, once: Vercel → the `sandbox` project → Settings → Git → connect `Edw1n-F/Sandbox`. The build settings in
+Frontend, once: Vercel → the `sandbox` project → Settings → Git → connect `ISFEdwin/Sandbox` (done 25 Nov; the project
+was previously unlinked, so pushes built nothing). The build settings in
 `vercel.json` apply unchanged because the project's root directory is already the repository root. Leave the
 `VITE_API_BASE_URL` production variable in place; without it the deployed bundle has no API to talk to.
 
@@ -223,7 +224,7 @@ bash scripts/setup_azure_oidc.sh
 ```
 
 That creates an Entra app registration with no password, scopes "Website Contributor" to `sandbox-api-t1` alone, and
-pins its federated credential to `repo:Edw1n-F/Sandbox:ref:refs/heads/main`, so a branch or a fork cannot deploy even if
+pins its federated credential to `repo:ISFEdwin/Sandbox:ref:refs/heads/main`, so a branch or a fork cannot deploy even if
 its CI is green. The three repository variables it sets name the identity; no cloud credential is stored in the repo.
 Until it has been run, the workflow skips rather than fails.
 
