@@ -1,0 +1,101 @@
+name: deploy-api
+
+# Deploys the FastAPI backend to Azure App Service once `ci` has passed on main.
+#
+# Why this exists: until now the API only reached Azure when someone ran
+# scripts/deploy_azure.sh from their laptop. `git push` did nothing, so the
+# deployed app could sit behind the repository indefinitely without any signal
+# saying so. This workflow makes the push the deploy.
+#
+# Two details worth knowing before editing it:
+#
+#   1. It is gated on repository *variables*. Until scripts/setup_azure_oidc.sh
+#      has been run, the job is skipped rather than failing, so a fork or a fresh
+#      clone does not report a red X for infrastructure it never had.
+#   2. Packaging is delegated to scripts/deploy_azure.sh with DRY_RUN=1. That
+#      script owns the exclusion rules (no .env, no data/llm_config.json, no
+#      virtualenvs) and refuses to emit a zip that is missing app/main.py or the
+#      scripts/ modules the API imports at startup. Duplicating those rules here
+#      would let the two drift, and the failure mode is a container that dies
+#      with ModuleNotFoundError after a successful-looking deploy.
+#
+# SKIP_ASSETS=1: code only. The 476 MB tile set and the data store already live
+# on /home and persist across deploys; re-uploading them would take the job from
+# ~2 minutes to half an hour. A first-time deploy, or a change under backend/data
+# or backend/model, still needs the local script without that flag.
+
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  # The azure/login OIDC exchange is the only thing this needs elevated rights
+  # for. There are no stored cloud credentials in this repository.
+  id-token: write
+
+# Serialise deploys: two zip deploys racing can leave the app on either build.
+concurrency:
+  group: deploy-api-main
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy the API
+    if: >
+      vars.AZURE_CLIENT_ID != '' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'main'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      APP_NAME: sandbox-api-t1
+      RESOURCE_GROUP: sandbox-rg
+    steps:
+      # workflow_run checks out the default branch by default, which is not
+      # necessarily the commit CI just passed. Name it explicitly.
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Package backend/ with the same rules as a local deploy
+        run: DRY_RUN=1 SKIP_ASSETS=1 bash scripts/deploy_azure.sh
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Push the zip to App Service
+        run: |
+          az webapp deployment source config-zip \
+            --name "$APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --src "/tmp/${APP_NAME}.zip" \
+            --timeout 1800 \
+            --output none
+
+      # A zip deploy returns as soon as Kudu accepts it. /health is the only
+      # proof the app actually rebound: startup.sh reconstructs antenv, seeds
+      # /home and mounts /static/model, and any of those failing leaves a
+      # running-looking site that 500s on the first real request.
+      - name: Wait for /health
+        run: |
+          for attempt in $(seq 1 40); do
+            if curl -fsS --max-time 10 "https://${APP_NAME}.azurewebsites.net/health"; then
+              echo
+              echo "Healthy after ${attempt} attempt(s)."
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "Health still failing after 10 minutes." >&2
+          exit 1
+
+      - name: Sign out of Azure
+        if: always()
+        run: az logout || true

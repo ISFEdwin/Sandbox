@@ -203,6 +203,40 @@ vercel deploy --prod
 That value needs the `/api` suffix. The default is same-origin `/api` because the Vite dev server proxies it, so a bare
 origin produces `404`s on every request — the app reports "Could not load the scene".
 
+Those commands are the fallback, not the normal path. A `git push` deploys both halves once the one-time setup below is
+done:
+
+| Piece | Trigger | Mechanism |
+|---|---|---|
+| Frontend | push to `main` | Vercel's Git integration: builds the pushed commit, publishes to production, and gives every pull request a preview URL |
+| Backend | `ci` passes on `main` | `.github/workflows/deploy-api.yml` packages `backend/` with the same rules as `scripts/deploy_azure.sh` and zip-deploys it |
+
+Frontend, once: Vercel → the `sandbox` project → Settings → Git → connect `Edw1n-F/Sandbox`. The build settings in
+`vercel.json` apply unchanged because the project's root directory is already the repository root. Leave the
+`VITE_API_BASE_URL` production variable in place; without it the deployed bundle has no API to talk to.
+
+Backend, once:
+
+```bash
+az login && gh auth login
+bash scripts/setup_azure_oidc.sh
+```
+
+That creates an Entra app registration with no password, scopes "Website Contributor" to `sandbox-api-t1` alone, and
+pins its federated credential to `repo:Edw1n-F/Sandbox:ref:refs/heads/main`, so a branch or a fork cannot deploy even if
+its CI is green. The three repository variables it sets name the identity; no cloud credential is stored in the repo.
+Until it has been run, the workflow skips rather than fails.
+
+Two limits to know before trusting the pipeline:
+
+- **It deploys code, not data.** The workflow passes `SKIP_ASSETS=1`; the 476 MB of tiles and the store stay on `/home`.
+  Worse, `backend/startup.sh` seeds `/home/data` only once, behind a `.seeded` marker, so a committed change under
+  `backend/data/` never replaces what is already there. Data changes need a full `bash scripts/deploy_azure.sh` **and**
+  the marker removed, or a fresh app.
+- **Manual deploys are still possible and still dangerous if run stale.** `vercel deploy --prod` uploads the working
+  tree, committed or not. `scripts/deploy_azure.sh` zips `backend/` the same way. Neither reads git history, so a deploy
+  from a dirty tree ships work that no one reviewed.
+
 Three things `backend/startup.sh` handles that are easy to get wrong on this host, each of which produced a failed
 deploy first:
 
