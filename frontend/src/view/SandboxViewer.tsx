@@ -34,6 +34,7 @@ import {
 } from 'cesium'
 import 'cesium/Build/Cesium/Widgets/widgets.css'
 
+import { serverUrl } from '@/api/client'
 import { usePlanStore } from '@/state/planStore'
 import { useSceneStore } from '@/state/sceneStore'
 import { addOnlineProps, type OnlinePropHandle } from './onlineProps'
@@ -618,7 +619,7 @@ export default function SandboxViewer({ className }: SandboxViewerProps = {}) {
       await whenDemReady()
       if (cancelled || !isLive(viewerRef.current)) return
       try {
-        const response = await fetch(`/static/openfoam/streamlines/${windFrom}.geojson`)
+        const response = await fetch(serverUrl(`/static/openfoam/streamlines/${windFrom}.geojson`))
         if (!response.ok) {
           drawGeometric()
           return

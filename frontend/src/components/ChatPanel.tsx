@@ -33,7 +33,7 @@ import LLMConfigPanel from './LLMConfigPanel'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import { errorMessage } from '@/api/client'
+import { errorMessage, serverUrl } from '@/api/client'
 import {
   streamChat,
   type AnswerCard,
@@ -1145,7 +1145,7 @@ export default function ChatPanel() {
   // The model-configured dot. Green = live LLM, amber = parser only, grey = unknown.
   useEffect(() => {
     let cancelled = false
-    void fetch('/health')
+    void fetch(serverUrl('/health'))
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`status ${r.status}`))))
       .then((d) => { if (!cancelled) setLlmConfigured(Boolean(d?.llm?.configured)) })
       .catch(() => { if (!cancelled) setLlmConfigured(null) })

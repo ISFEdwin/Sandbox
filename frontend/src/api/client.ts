@@ -12,10 +12,48 @@
  */
 import axios, { AxiosError, type AxiosInstance } from 'axios'
 
-const baseURL = import.meta.env.VITE_API_BASE_URL || '/api'
+/** The API base as configured: `/api` in dev, absolute in a split deployment. */
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
+
+/**
+ * The backend's own origin, with no `/api` suffix. Empty string when the API is
+ * same-origin, which is the dev case: the Vite proxy forwards `/api`, `/health`
+ * and `/static` to port 8000 (see `vite.config.ts`).
+ */
+const SERVER_ROOT = API_BASE_URL.replace(/\/api\/?$/, '')
+
+/**
+ * Resolve an `/api/...` path against the configured API base.
+ *
+ * For the calls axios cannot make: streaming (`fetch` + a `ReadableStream`) is
+ * the one that matters. A relative `/api/...` is only correct while a proxy is
+ * in front of it. In production the frontend is a static build on a different
+ * host, where `/api` returns that host's 404 -- which is what happened to
+ * `streamChat`: chat threw `chat stream failed: 404` on every message, and the
+ * dev server hid it completely.
+ */
+export function apiUrl(path: string): string {
+  return `${API_BASE_URL}${path}`
+}
+
+/**
+ * Resolve a backend path that is NOT under `/api` against the backend origin:
+ * `/health`, `/static/...`.
+ *
+ * Same trap as `apiUrl`, one step further out. The backend already absolutises
+ * the URLs it returns (`STATIC_BASE_URL`), so paths that arrive in a JSON
+ * payload are fine. These are the paths the frontend spells out itself, and
+ * every one of them used to be root-relative: the model-configured dot read
+ * `/health` from the static host, and the wind index and wind streamlines read
+ * `/static/openfoam/...` from it, so all three 404'd in production and worked
+ * in dev.
+ */
+export function serverUrl(path: string): string {
+  return `${SERVER_ROOT}${path}`
+}
 
 export const http: AxiosInstance = axios.create({
-  baseURL,
+  baseURL: API_BASE_URL,
   timeout: 60_000,
   headers: { 'Content-Type': 'application/json' },
 })

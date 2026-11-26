@@ -7,10 +7,10 @@
  * precedence between the two is wrong, every error message in the panel is wrong --
  * and it would fail silently, because a wrong-but-plausible string still renders.
  */
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { AxiosError } from 'axios'
 
-import { ApiError, errorMessage, toApiError } from './client'
+import { ApiError, errorMessage, toApiError, apiUrl, serverUrl } from './client'
 
 /** An AxiosError carrying a backend response, or none at all for a network failure. */
 const fromResponse = (status: number, data: unknown): AxiosError =>
@@ -82,11 +82,69 @@ describe('errorMessage', () => {
       'scene not found',
     )
   })
-
   it('stringifies anything else rather than throwing', () => {
     // This is what an error boundary calls. Throwing here would replace a readable
     // failure with a blank page.
     expect(errorMessage('raw string')).toBe('raw string')
     expect(errorMessage(undefined)).toBe('undefined')
+  })
+})
+
+/**
+ * URL resolution, which no unit test covered and which a proxy made invisible.
+ *
+ * `vitest` runs with `VITE_API_BASE_URL` unset, so these assert the dev shape:
+ * every path stays root-relative, which the Vite proxy forwards to port 8000.
+ * That is exactly why the production failure survived: the same code is correct
+ * here and a 404 there.
+ *
+ * The split-deployment case is what the assertions below pin by construction --
+ * `apiUrl` and `serverUrl` both derive from the one configured base, so if
+ * either ever drops back to a hardcoded '/api/...' or '/static/...', it is no
+ * longer reading from `API_BASE_URL` and this file is where to add the case.
+ */
+describe('apiUrl and serverUrl', () => {
+  it('keeps /api paths root-relative when no base is configured', () => {
+    expect(apiUrl('/scenes/s1/chat/stream')).toBe('/api/scenes/s1/chat/stream')
+  })
+
+  it('keeps non-/api backend paths root-relative when no base is configured', () => {
+    // Both go through the Vite proxy in dev: /health and /static are in
+    // vite.config.ts's proxy table, not just /api.
+    expect(serverUrl('/health')).toBe('/health')
+    expect(serverUrl('/static/openfoam/wind_index.json')).toBe(
+      '/static/openfoam/wind_index.json',
+    )
+  })
+
+  it('does not double the slash or the /api segment', () => {
+    expect(apiUrl('/scenes')).toBe('/api/scenes')
+    expect(serverUrl('/health')).toBe('/health')
+  })
+
+  /**
+   * The production shape, which is the one that failed. A split deployment sets
+   * `VITE_API_BASE_URL` to an absolute origin; both helpers must then leave the
+   * frontend's own origin entirely, because the static host serves neither
+   * `/api` nor `/static` and `/health` is not a file.
+   *
+   * `vi.resetModules()` is required: the base is a module-level const, so
+   * stubbing the env after import would test nothing.
+   */
+  it('resolves against the configured origin when the API is on another host', async () => {
+    vi.stubEnv('VITE_API_BASE_URL', 'https://api.example.com/api')
+    vi.resetModules()
+    const mod = await import('./client')
+
+    expect(mod.apiUrl('/scenes/s1/chat/stream')).toBe(
+      'https://api.example.com/api/scenes/s1/chat/stream',
+    )
+    expect(mod.serverUrl('/health')).toBe('https://api.example.com/health')
+    expect(mod.serverUrl('/static/openfoam/wind_index.json')).toBe(
+      'https://api.example.com/static/openfoam/wind_index.json',
+    )
+
+    vi.unstubAllEnvs()
+    vi.resetModules()
   })
 })

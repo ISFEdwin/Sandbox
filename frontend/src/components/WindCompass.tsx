@@ -13,6 +13,7 @@ import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Typography from '@mui/material/Typography'
 
+import { serverUrl } from '@/api/client'
 import { usePlanStore } from '@/state/planStore'
 import { useSandboxStore } from '@/state/sandboxStore'
 import { useSceneStore } from '@/state/sceneStore'
@@ -83,7 +84,7 @@ export default function WindCompass({ offsetLeft }: { offsetLeft: number }) {
 
   useEffect(() => {
     let cancelled = false
-    void fetch('/static/openfoam/wind_index.json')
+    void fetch(serverUrl('/static/openfoam/wind_index.json'))
       .then((response) => (response.ok ? response.json() : Promise.reject(new Error('missing'))))
       .then((body: WindIndex) => {
         if (!cancelled) setIndex(body)

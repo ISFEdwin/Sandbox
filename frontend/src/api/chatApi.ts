@@ -14,6 +14,8 @@
  * about has to be sent.
  */
 
+import { apiUrl } from './client'
+
 /** One headline number. */
 export interface StatItem {
   l: string
@@ -121,7 +123,7 @@ export async function streamChat(
   onEvent: (event: StreamEvent) => void,
   signal?: AbortSignal,
 ): Promise<void> {
-  const response = await fetch(`/api/scenes/${sceneId}/chat/stream`, {
+  const response = await fetch(apiUrl(`/scenes/${sceneId}/chat/stream`), {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
