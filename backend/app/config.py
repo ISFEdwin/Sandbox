@@ -93,6 +93,10 @@ class Settings(BaseSettings):
     plans_dirname: str = "plans"
     interventions_dirname: str = "interventions"
     rasters_dirname: str = "rasters"
+    #: One directory per prepared area bundle (docs/PIPELINE.md). The legacy
+    #: ``*_hsk.npy`` files stay in ``data/`` and ``data/rasters/`` until
+    #: Increment A ports the scripts; both layouts coexist while that lands.
+    areas_dirname: str = "areas"
 
     # GenAI provider. Empty by default: the heuristic provider needs no
     # credentials and the demo must not die for want of a key. Set
@@ -164,12 +168,18 @@ class Settings(BaseSettings):
     def rasters_dir(self) -> Path:
         return self.data_dir / self.rasters_dirname
 
+    @property
+    def areas_dir(self) -> Path:
+        """Root of the per-area bundles. See ``docs/PIPELINE.md``."""
+        return self.data_dir / self.areas_dirname
+
     def ensure_dirs(self) -> None:
         for path in (
             self.scenes_dir,
             self.plans_dir,
             self.interventions_dir,
             self.rasters_dir,
+            self.areas_dir,
         ):
             path.mkdir(parents=True, exist_ok=True)
 
