@@ -16,7 +16,7 @@ which of those requirements exist. It is not a roadmap (see [TODO.md](TODO.md)) 
 | **1. Comparison across separate axes** | Two schemes, read side by side, each axis in its own units: drainage deficit and flood extent, surface heat, tide, greenery and impervious share, wind channel. No combined score and no pass/fail. | **On screen.** `POST /scenes/{id}/compare-schemes` scores A and B against one baseline and storm; `ComparisonPanel` prints A / B / B−A for seven rows and returns `combinedScore: null`. `/scenario/compare` still ranks whole scenarios separately. |
 | **2. A shared picture follows from holding the schemes** | The schemes already on the table sit in one model, so the comparison is also what each project assumed about the others. The dated register is that side effect. It is not the product the demo opens on. | Toggles, swap and compare run today. Declarations, versions, roles and tenancy do not, and they are downstream of the comparison. |
 | **3. Natural-language intervention** | A sentence such as "add a retention pond in the north" becomes a draft on the map. The site is chosen from the terrain, land cover and flood grid; the model cannot invent coordinates. The user confirms before the comparison scores it. A height or density request goes to the massing tool with an explicit scope. | **Built.** Routing is `app/agent/intent.py` (the model can raise a turn to an intervention and cannot lower one). Placement is `app/services/ai_plan.py`. Drafts stay drafts until confirm. |
-| **4. Wind channel as a comparison axis** | The channel is drawn so a toggled scheme can be read against it. The default comparison row is the NE first-obstruction reading. The inflow is the Planning Department site-wind table, cited. With the 2.5D massing on, the drawing is a coarse OpenFOAM solve around those extruded footprints. The least-cost corridor remains the fallback, and it is what the textured 3D view draws. Neither drawing is a velocity ratio or a pass/fail. | **Solved, off the request path.** `scripts/openfoam_channel/run_channel.py` runs `simpleFoam` (k-epsilon) in the image `opencfd/openfoam-run:2512` (GPL-3.0). The Foundation tree is cited and not vendored. Obstacles are the 2.5D footprints. The inlet, 2.922 m/s, is the PlanD annual 500 m NE bin midpoint (6.9095 m/s, cell 3463) times (10/500)^0.22; PlanD does not publish that 10 m speed. Sidecar `data/openfoam/channel_sidecar.json` is SOLVED, 23 Nov 2026. The compass selects the from-bearing (16 PlanD directions) and the season and height table. Each bearing is solved at its annual 500 m inlet; another table scales those speeds by the inlet ratio. The comparison row is still the geometric corridor. `POST /ventilation/diagnostic` stays a shelter index. The window also touches cells 3462, 3559 and 3560. Their annual 500 m roses are area-weighted in `hsk_site_wind_window.json`; `directionWeights=window` selects the headline from that merge (E on the committed tables) and does not enter the cell cost. The default corridor weight is still the AVRG73 combined 40.8% fact. The comparison board names the existing envelopes and the planned catalog (`GET /scenes/{id}/data-collection`, Guidance Note 6/2023 §21) and prints a wind-channel option table. SVR and LVR stay empty. The coarse solve is still not re-run per scheme. |
+| **4. Wind channel as a comparison axis** | The channel is drawn so a toggled scheme can be read against it. The default comparison row is the NE first-obstruction reading. The inflow is the Planning Department site-wind table, cited. With the 2.5D massing on, the drawing is a coarse OpenFOAM solve around those extruded footprints: an 8 m mesh, fifteen 8 m layers, about 400 threads for a bearing, seeded from 4 m up. The least-cost corridor remains the fallback, and it is what the textured 3D view draws. Neither drawing is a velocity ratio or a pass/fail. | **Solved, off the request path.** `scripts/openfoam_channel/run_channel.py` runs `simpleFoam` (k-epsilon) in the image `opencfd/openfoam-run:2512` (GPL-3.0). The Foundation tree is cited and not vendored. Obstacles are the 2.5D footprints: each building's surveyed ring and height rasterised at 8 m, with a cell solid only when its centre or a majority of probes falls inside the ring. The inlet, 2.922 m/s, is the PlanD annual 500 m NE bin midpoint (6.9095 m/s, cell 3463) times (10/500)^0.22; PlanD does not publish that 10 m speed. Sidecar `data/openfoam/channel_sidecar.json` is SOLVED, 26 Nov 2026. The compass selects the from-bearing (16 PlanD directions) and the season and height table. Each bearing is solved at its annual 500 m inlet; another table scales those speeds by the inlet ratio. The comparison row is still the geometric corridor. `POST /ventilation/diagnostic` stays a shelter index. The window also touches cells 3462, 3559 and 3560. Their annual 500 m roses are area-weighted in `hsk_site_wind_window.json`; `directionWeights=window` selects the headline from that merge (E on the committed tables) and does not enter the cell cost. The default corridor weight is still the AVRG73 combined 40.8% fact. The comparison board names the existing envelopes and the planned catalog (`GET /scenes/{id}/data-collection`, Guidance Note 6/2023 §21) and prints a wind-channel option table. SVR and LVR stay empty. The coarse solve is still not re-run per scheme. |
 | **5. Screening, labelled** | Every figure says what was assumed and what is unknown. The engine is arithmetic on the schemes it was given. | The parameter card and the grounded chat do this today. |
 
 ---
@@ -181,6 +181,8 @@ because this repository is public.
 | Screening-grade hydrology | Cannot be sold as an assessment; every output must say so | Never — this is the design, not a gap |
 | The design storm is a *stated* input, not an ambient default | Every published figure must carry the storm it was computed under, or it is not comparable with anything | Never — this is the design, not a gap |
 | Runtime residue in the local store | The app on a developer machine may start with a staged scenario nobody confirmed; the *suites* are now immune, the app is not | Before the next demo on that machine |
+| A project enters the scene by editing `backend/data/projects/<id>.json` and re-running `scripts/seed_projects.py` | A third party cannot add a scheme without a developer and a redeploy, so every "bring your scheme" conversation is a demo request. The contract for a route exists (`docs/PROJECT_IMPORT.md`); the route does not | Before A1 can be a data entry rather than a commit — TODO H1 |
+| No view from below the development | Pitch is clamped to −88…−8 deg and collision detection keeps the eye above ground, so no pose looks up at an underside; and because both tilesets, the three projection models and the globe are all `backFaceCulling: true`, anything from beneath renders as background. Only the extruded 2.5D masses are closed volumes with a bottom | Before an underground tank or a foundation is shown to anyone as a volume — TODO H10/H11 |
 
 ---
 
@@ -225,6 +227,10 @@ because this repository is public.
 Update this file when a row in §3 changes status, when a §4.2 item is decided, or when the model changes. The
 "verified / inherited / unverified" distinction must survive edits — an unverified claim written as fact here will be
 quoted as fact later.
+
+The team board (<https://trello.com/b/Bz0W639T/sandbox>) mirrors §5 and TODO.md across Done / Pending / Blocked / To Do,
+populated on 26 Nov 2026. It is a view, not a record: a capability counts as moved when it is written here, and the board
+is stale until it is copied across.
 
 ---
 
@@ -308,7 +314,7 @@ Hung Shui Kiu–Ha Tsuen is recorded as plan **S/HSK/4**, approved 29 September 
 
 Checked in the running app on 23 Nov: 60 ha and a trunk road returned Schedule 3 **Review** and Schedule 2 **A.1**, with the label and the unknowns list on the panel. `tests/test_government_fit.py` (24) and `frontend/src/api/governmentFit.test.ts` (9) pass. §2.1’s full-suite counts were not re-run for this pass.
 
-Data collection, same day: `GET /api/scenes/{id}/data-collection` lists the 396 existing envelopes and the planned catalog (HSK Park, HSK MTR station). Committed projects are not held. The duties it cites are the excerpts in `backend/data/reference/regulatory_duties.json`. GN 6/2010 §21 is kept and not applied; GN 6/2023 §21 is the live paragraph, and the sentence is unchanged. The comparison board's east-channel card reads the area-weighted window rose for cells 3462, 3463, 3559 and 3560. Annual east is 15.1% and leads the sixteen directions. Summer east is 6.5% and ranks 7th, behind SSW. Winter east is 18.8% and ranks 2nd, behind NE. The card also names each cell's PlanD table, the centroid cell 3463 inlet (2.3009 m/s at 10 m; PlanD does not publish that speed), and 41 solved east streamlines, off the request path. Scheme A and B are compared by east first-obstruction height and path length, in metres. It does not report a site or local velocity ratio.
+Data collection, same day: `GET /api/scenes/{id}/data-collection` lists the 396 existing envelopes and the planned catalog (HSK Park, HSK MTR station). Committed projects are not held. The duties it cites are the excerpts in `backend/data/reference/regulatory_duties.json`. GN 6/2010 §21 is kept and not applied; GN 6/2023 §21 is the live paragraph, and the sentence is unchanged. The comparison board's east-channel card reads the area-weighted window rose for cells 3462, 3463, 3559 and 3560. Annual east is 15.1% and leads the sixteen directions. Summer east is 6.5% and ranks 7th, behind SSW. Winter east is 18.8% and ranks 2nd, behind NE. The card also names each cell's PlanD table, the centroid cell 3463 inlet (2.3009 m/s at 10 m; PlanD does not publish that speed), and 347 solved east streamlines, off the request path. Scheme A and B are compared by east first-obstruction height and path length, in metres. It does not report a site or local velocity ratio.
 
 CI, same day: the workflow actions are `actions/checkout@v5`, `actions/setup-node@v5`, `actions/setup-python@v6` and `dorny/paths-filter@v4`, each on the Node.js 24 runtime. The contract job runs `oasdiff breaking` v1.39.0 against the base OpenAPI file. Adding the data-collection route is not a breaking change.
 
@@ -390,4 +396,95 @@ script now keeps that directory and asserts `app/main.py` and two `scripts/` mod
 
 The first row is the one that matters for §3: being reachable does not make the store multi-tenant, and it does not make
 a declaration storable. Rows 5–15 remain "Not built".
+
+---
+
+## 12. Update — 26 Nov 2026: the import path is specified, not built
+
+A third project currently enters the scene by editing `backend/data/projects/<id>.json` and re-running
+`scripts/seed_projects.py`. A project is data rather than code, so that path works: the plan carries
+`params.projectId`, `ProjectCatalog` lists it because it reads the plans, and the run scores it through the ordinary
+`plan_ids` field. What it does not survive is a third party — it needs a developer and a redeploy.
+
+[docs/PROJECT_IMPORT.md](docs/PROJECT_IMPORT.md) is the contract for closing that gap: a two-phase
+`POST /api/scenes/{sceneId}/imports` with `dryRun`, an `ImportReport` that names the cells, the coverage fraction, the
+building overlap, the axes that will move, the assumptions and what is unknown, and an explicit refusal list. It is
+specification only. No route, no panel, no asset upload exists.
+
+**Nothing in §3 changes.** Importing a scheme is not declaring one: no hash, no signature, no "as at", no tenancy.
+An import is a staged scheme at the same trust level as a hand-drawn intervention. B3 and B4 remain unbuilt.
+
+Two defects were recorded while writing it, and both predate the document:
+
+1. **Extruded interventions have no base height.** `view/interventionLayer.ts::applyStyle` sets `extrudedHeight` and
+   `heightReference = NONE` but never `height`, so a 1.5–2 m feature on ground at 3.4–17.3 m starts at ellipsoid zero
+   and is buried. Only the two ground-clamped underground tanks draw. `footprintLayer` already samples the DEM and
+   does it correctly; the intervention and draft layers do not. TODO H3.
+2. **The engine never checks a scene's bbox against its rasters.** `sandbox_model.load_grids()` is
+   `@lru_cache(maxsize=1)` over fixed `*_hsk.npy` names. A second scene created anywhere on earth is scored against
+   the HSK/HT grid with no error. That is the second-study-area blocker (§5), and it is also why an import must clip
+   and refuse rather than trust the caller.
+
+Measured state is unchanged: §2.1's suite numbers were not re-run for this pass, and none of it was verified in the
+running app because there is nothing to verify yet.
+
+### 12.1 The underside view, requested the same day
+
+The request was to stop limiting the viewport so a user can see the underside of the development. Checked against the
+running app, the limit is not where it looks:
+
+- **Pitch never rises above the horizon.** `cameraRig.ts` clamps tilt to −88…−8 deg, and `geometry.test.ts` asserts
+  `MAX_PITCH_DEG < 0`, so *no* interaction can look up at the site from below.
+- **The eye cannot go underground.** `enableCollisionDetection = true` keeps the camera above the terrain, which is
+  correct for a 139 m relief surface and fatal for an undercroft view.
+- **Nothing is two-sided.** Queried live: both `Cesium3DTileset`s, the three projection `Model`s and `scene.globe`
+  all report `backFaceCulling: true`. From beneath, terrain, textured buildings and GLBs rasterise nothing.
+- **The clipped globe gives a floor with no underside.**
+
+So this is a two-part job, recorded as TODO H10 (the pose) and H11 (the visible mass). H10 is a small change to a
+deliberate invariant; H11 spends render budget and should be measured against the same opening frame the model-asset
+budget is judged on. Neither is built.
+
+---
+
+## 13. Update — 26 Nov 2026: DeepTech100+ submission
+
+HKU TEC and HKSTP run **DeepTech100+**; Cohort 8 closes **29 Nov 2026, 23:59 HKT**. The application is a Qualtrics
+form, a pitch deck of **at most 15 slides** (English or Chinese), and proof of the Person-in-Charge's HKU
+association. The programme feeds the HKSTP Ideation (up to HK$100k, three milestone tranches) and Incubation (up to
+HK$1.29M) programmes, HK$1.39M in total. Incorporation is not required to apply; a successful applicant must
+incorporate a Hong Kong limited company, and HKU members must hold at least 20% of it.
+
+The deck in `deliverables/` was built for the CCMF Hong Kong Programme: 17 slides, a CCMF cover, a CCMF
+10k/45k/45k disbursement schedule and a six-month timeline. It could not be submitted as it stood.
+
+**What changed.** `deliverables/Sandbox Pitch Deck (DeepTech100+) v1.pptx` is a 15-slide cut of it, made by a script
+so the change is reproducible and the CCMF file is untouched. **It is an interim content base, not the submission
+file:** the team is producing a separate submission version, so no gate below is closed by it.
+
+- Two slides removed: the product overview (its facts sit on the how-it-works, value-proposition and buyer slides)
+  and the illustrative Hung Shui Kiu scenario with its example 18%. Their content survives in the speaker notes.
+- Cover reads "HKU DEEPTECH100+ · COHORT 8"; the ask reads "Ideation funding", with milestone 1/2/3 labels and a
+  route into HKSTP Incubation, up to HK$1.29M. The speaker note says the 10/45/45 split is our proposal, not a
+  published schedule.
+- Timeline relabelled from calendar quarters to months 1–12 of the Ideation year, with the DeepTech100+ result in
+  Jan–Feb 2027 and HKSTP (not Cyberport) Incubation.
+- Proof slide recomputed on 26 Nov 2026: 47 `/api` paths, 333 collected backend tests, 212 commits. The old 46 /
+  247 / 185 were stale or counted by a method the repository does not reproduce.
+- Approval-path footnote now carries G9's line: two gates, EIAO and town planning, broad-brush fit read only.
+
+**Verified in this pass.** At HEAD on 26 Nov 2026: `pytest` 333 passed (82 s), the per-file dual-runner loop 0
+failures, frontend 133 tests passed, `tsc --noEmit` and `eslint --max-warnings 0` clean, and
+`sandbox-azure-five.vercel.app` returns 200. The deck converts to PDF cleanly and its 15 pages carry the expected
+titles in order.
+
+**Still not done, and not a code change:**
+
+- The Qualtrics form, the HKU affiliation proof and the choice of Person-in-Charge are human actions.
+- The submission version of the deck is being produced separately; v1 is its content base and may be replaced
+  wholesale. `scripts/deck_diff.py` is the check to run when it lands: it reports slide count against the 15-slide
+  limit, a page-number break, foreign-programme wording, and any proof-slide count that no longer matches the
+  repository, then diffs the text against the CCMF source.
+- The CCMF deck is still 17 slides and still says a six-month project while its timeline shows four quarters. That
+  inconsistency matters if the 1 Dec CCMF form is also submitted; it is not touched here.
 

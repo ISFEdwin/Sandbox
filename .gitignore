@@ -24,6 +24,10 @@ frontend/.vitest-tmp/
 .vscode/
 .idea/
 *.swp
+# Cursor's own state (chat plans, rules caches). Editor state, not project
+# material: a plan worth keeping belongs in deliverables/, as
+# competition_entry_essentials.plan.md does.
+.cursor/
 
 # OS
 .DS_Store
@@ -31,6 +35,11 @@ Thumbs.db
 
 # Word temp files
 ~$*
+
+# Submission decks. They carry the fee schedule, competitor prices and partner
+# targets, and this repository is public (TODO E3). Keep the .pptx local; the
+# reproducible cut lives in scripts/build_deeptech_deck.py, which carries no fees.
+deliverables/*.pptx
 
 # Transient HTTP cache for scripts/fetch_dem.py.
 # Every batch of the elevation grid is cached so an interrupted run resumes for

@@ -2,6 +2,8 @@
 
 The product edges live in [STATUS.md](STATUS.md) (18 Nov 2026): comparison across separate axes, the shared picture as a side effect of holding the schemes, natural-language intervention, the wind channel, and labelled screening. This file is the checklist. It is not the definition of the product.
 
+The same items are tracked on the team board, <https://trello.com/b/Bz0W639T/sandbox> — Done, Pending, Blocked and To Do. The board is a view of this file, updated on 26 Nov 2026; if the two disagree, this file wins and the board is stale.
+
 Ordered by when it must be done, not by how interesting it is. `[P0]` = the pathway stalls without it.
 Update as items close; move the reason (not just the tick) into [STATUS.md](STATUS.md) when a capability lands.
 
@@ -18,6 +20,9 @@ The next four weeks decide whether this is a pilot or a slide deck.
       developer. Nothing else on this list matters if it does not happen.
       *Unblocked today:* the coverage guard no longer refuses a declared project for being large
       (`app/services/consent.py`), so a 30%-of-district declaration is applied and flagged rather than dropped.
+      **Blocked in practice by ingestion (26 Nov 2026).** "Entered into the sandbox" currently means editing
+      `backend/data/projects/<id>.json` in this repository and re-running `scripts/seed_projects.py`. H1 is the
+      route that makes A1 a data entry rather than a commit; the spec is `docs/PROJECT_IMPORT.md`.
 
 - [ ] **A2 `[P0]` Define attribution, in writing, then in code.** Exactly what counts as "inherited" versus "caused":
       baseline state, neighbour contributions, phase timing, rounding, and how the split is reported when it does not sum
@@ -38,8 +43,8 @@ The next four weeks decide whether this is a pilot or a slide deck.
       the approval path → three axes → declaration/computation/record → three roles → licence bands → BEAM Plus and
       CORENET X precedent → market → competitive field → the ask.
       *Done when:* the deck states one thesis on one line, three roles, and one fee architecture with no internal
-      contradictions. — **met.** The deck lives in the team's working folder, deliberately outside this public
-      repository because it carries the fee schedule.
+      contradictions. — **met.** The decks sit in the local, git-ignored `deliverables/` because they carry the fee
+      schedule; `deliverables/*.pptx` is excluded for that reason.
 
 - [ ] **A3b `[P1]` Governance slide.** The new deck covers the precedent slide; it still needs the Code of Practice
       and governance slide, which depends on A4.
@@ -137,6 +142,16 @@ Two months of engineering that is invisible in a demo and decisive in a pilot.
       cools open cells more than sheltered cells at that speed, and the board
       has a surface-mean row in °C. The allowance is capped at 3 °C. SVR and
       LVR stay null. The corridor cost is still geometry.
+      26 Nov 2026: the channel was re-solved at 8 m instead of 20 m, on the 396
+      surveyed rings with a centre-or-majority test so a footprint is not grown
+      by a cell on every side. Threads are seeded at 4, 12, 20, 36 and 52 m and
+      every bearing now carries about 400 of them (NE was 92). The drawn threads
+      are thinner, display traces sit underneath, and the polylines no longer
+      use a depth-fail material: a thread behind a massing block is hidden, so
+      the drawing reads as flow around the block rather than through it. The
+      textured city model stays a separate 1,650-tile Draco mesh; voxelising it
+      would need a Draco decoder and it is not the obstacle field the solver
+      used, so the threads stay paired with the 2.5D footprints.
 
 - [ ] **B12 `[P2]` Paid or local model id for the LLM path.** Rate limits in a paying session are a churn event.
 
@@ -227,6 +242,9 @@ register thesis to survive a judging panel. Full dates and eligibility in
 - [ ] **F2 `[P0]` Write the CCMF milestone plan and HK$100k budget by 24 Nov.** Six months, three disbursement gates
       (10k / 45k / 45k), credible line items, explicit ≤3-month time-to-market, and a social-responsibility paragraph.
       This is the part the 15-slide deck does not contain.
+      **Partly met (26 Nov 2026).** The final CCMF deck does carry three gates and a line-item budget; but the
+      timeline footnote says a six-month project while the timeline table shows four calendar quarters, and slide 13
+      puts launch in Q4. Reconcile before the 1 Dec form, or the milestone plan contradicts itself.
 - [ ] **F3 `[P0]` Submit the two Cyberport forms.** GBA YEP Stage 1 by **27 Nov** (individual, cheap, keeps the option
       open — but Stage 2 needs a Guangdong/Macau teammate); CCMF HK by **1 Dec**. Pick one as primary; two applications
       for the same idea to one vetting committee reads badly.
@@ -246,6 +264,21 @@ register thesis to survive a judging panel. Full dates and eligibility in
 - [ ] **F9 `[P1]` Re-run the suites and clear the runtime store before any competition demo.** §2.1's 256/27/111 are
       14 Nov numbers (E1); the local store still holds hand-poked residue that distorts the app, though not the suites
       (E5). A demo is the one place where both matter.
+      **Suites re-run (26 Nov 2026):** 333 pytest passed in 82 s, the per-file dual-runner loop had 0 failures,
+      133 frontend tests passed, `tsc` and `eslint --max-warnings 0` clean, demo returns 200. The runtime store has
+      **not** been cleared.
+
+- [ ] **F10 `[P0]` DeepTech100+ Cohort 8 — 29 Nov 2026, 23:59.** HKU TEC + HKSTP. A deck of **at most 15 slides**,
+      proof of the Person-in-Charge's HKU association, and the Qualtrics form. Feeds HKSTP Ideation (HK$100k, three
+      tranches) and Incubation (HK$1.29M). Incorporation is not required to apply; if approved, incorporate a Hong
+      Kong limited company and keep HKU member(s) at ≥20%.
+      **Deck cut (26 Nov 2026):** `deliverables/Sandbox Pitch Deck (DeepTech100+) v1.pptx`, 15 slides, rebranded from
+      CCMF, counts recomputed, timeline on the Ideation year, G9 line added. **Interim only** — a separate
+      submission version is in progress, and v1 is its content base rather than the file to upload. Check that
+      version with `python3 scripts/deck_diff.py "<deck>.pptx"`.
+      **Still human:** the form, the HKU affiliation proof, the PIC choice, and whether the submission version uses
+      HKU TEC's published deck template.
+      See `deliverables/DEEPTECH100_SUBMISSION.md`.
 
 ---
 
@@ -310,13 +343,278 @@ These do not replace A–F. They make the "labelled screening" edge legible to a
 
 ---
 
+## H. Project import — getting a scheme into the existing scene — added 26 Nov 2026
+
+This is the current build priority, and it sits **inside** A1 rather than beside it: A1 needs a real developer's
+scheme in the sandbox, and today that means editing a JSON file in this repository and re-running a seeder. A third
+party cannot add a project without a developer and a redeploy, which makes every "bring your scheme and we will
+score it" conversation a demo request rather than a product.
+
+The contract is written and not implemented: [docs/PROJECT_IMPORT.md](docs/PROJECT_IMPORT.md). Read §1 (three tiers)
+and §6 (what an import must never do) before scoping any of the items below. "The plan was written" is only the first
+half; the second is **integration readiness** (the subsection after H13), which is what makes a newly imported project
+part of the whole system rather than a row only the catalog can see.
+
+**The rule for this section:** an import puts geometry and *stated* effects on the sandbox so the run can score them.
+It is a staged scheme, not a declaration — no hash, no signature, no "as at". Those are B3/B4. An import that reads
+as a signed submission is the overclaim F5 keeps warning about.
+
+### What already works, off-repo
+
+A project is data, not code: `backend/data/projects/<id>.json` → `scripts/seed_projects.py` → a plan whose
+`params.projectId` makes it a row in `ProjectCatalog`. Toggling the row changes the run, and `terrainMeta.projects`
+draws the GLB. Two tiers exist — effect-only (footprint + declared effects) and modelled (adds a GLB, origin and
+scale). Both require a repository edit. Nothing in the effect, cap, consent or render path needs rebuilding; what is
+missing is a route, a report, and a place to put an uploaded asset.
+
+### Items
+
+- [x] **H0 `[P0]` Write the import contract.** `docs/PROJECT_IMPORT.md`: the three tiers, the two-phase
+      `POST /api/scenes/{id}/imports` with `dryRun`, the `ImportReport`, the compute order, the format matrix, the
+      refusal list, the acceptance tests and the risks.
+      **Met (26 Nov 2026).** Contract only; no code. The two defects it recorded are real and predate it: the
+      `interventions` extrusion has no DEM base height (so a 1.5–2 m feature on 8–12 m ground does not draw), and
+      `load_grids()` never compares its raster bounds to the scene bbox (so a project outside the window is scored
+      against it silently).
+
+- [ ] **H1 `[P0]` `POST /api/scenes/{sceneId}/imports` — T1 and T2, dry run first.** Validate geometry, clip to the
+      scene bbox, rasterise against the scene's own grid, test building overlap, apply the 25% / 40% caps through
+      the consent seam, resolve every effect through `INTERVENTION_EFFECTS`, write `project-<id>` with
+      `params.importId` and a digest, and return the report. `dryRun=true` writes nothing. No run is started.
+      *Done when:* a third project enters the running app without a repository edit, toggles in `ProjectCatalog`,
+      and a run's ledger attributes cells to it — and every refusal in `docs/PROJECT_IMPORT.md` §7 is a test.
+      *Reuse, do not retype:* `proposal_constraints` (overlap, caps, clipping), `InterventionIn` (geometry
+      validation), `seed_projects.interventions_for` (one intervention per effect on one ring),
+      `effect_is_scored` (the scored/skipped split).
+
+- [ ] **H2 `[P0]` Import panel in the app.** Drop a footprint (and optionally a GLB URL), see the report, then
+      confirm. The confirm step is the same gate the AI-proposal path already uses: nothing is written until the
+      user accepts, and the report is what they accept.
+      *Done when:* the panel shows cells, area, coverage fraction, building overlap, which axes will move, the
+      assumptions, and the `furtherInformation` list — and shows them *before* the write.
+      *Gated by:* H1. Keep it behind `ALLOW_IMPORTS=1` until B2, because the public demo has no auth.
+
+- [ ] **H3 `[P0]` Fix the DEM base on extruded interventions.** `applyStyle` sets `extrudedHeight` and
+      `heightReference = NONE` but never a `height`, so every extruded intervention starts at ellipsoid zero and is
+      buried on 3.4–17.3 m ground. Sample the DEM at the ring, set `height = base` and
+      `extrudedHeight = base + h`, as `footprintLayer` already does.
+      *Done when:* the 2 m paving slab and the 1.5 m flood storage are visible on the terrain in both 3D modes (today
+      they are entirely below it), the 14 m reservoir sits on the ground instead of sunk to its top 6 m, and a test
+      asserts a non-zero base height.
+      *Why it is P0:* an import that is scored but not drawn is indistinguishable from an import that failed, which
+      is exactly the class of fault `interventionLayer.ts` was written to avoid.
+
+- [ ] **H4 `[P1]` GeoJSON massing with height, previewed before commit.** A FeatureCollection with `height_m` per
+      feature becomes a geometry-only effect (`station_massing` shape): shade and wind exposure move, land cover
+      does not, and the report says so. Preview in 2.5D, then commit.
+      *Done when:* a planner sees the extruded massing and the cells it covers before pressing import, and the
+      comparison reports the heat/exposure change with no land-cover claim.
+
+- [ ] **H5 `[P1]` Derive a footprint from an uploaded model, server-side.** Move `compute_plan_project_footprint.py`
+      behind the route so a GLB alone is enough, with the derived ring shown for confirmation rather than trusted.
+      *Done when:* a GLB plus an origin and a scale produces a footprint the user can inspect and edit, and a model
+      whose base is not flat is flagged rather than silently averaged.
+
+- [ ] **H6 `[P1]` Model asset budget.** The two committed GLBs are 79 MB and 82 MB at `scale: 50`. Cap the accepted
+      size, report it in the import response, and prefer a decimated asset.
+      *Done when:* an import cannot add a model that stalls the opening view, and the report names the bytes.
+      *Why:* `SandboxViewer` opens the city tileset at screen-space error 128 precisely because 24 would pull about
+      250 MB into the opening view. A third 80 MB project at `scale: 50` is the same problem with no LOD to fall back on.
+
+- [ ] **H7 `[P1]` Refuse-or-convert matrix as a preflight.** GPKG, Shapefile and IFC are deferred to an offline
+      converter (I2); RVT/DWG are refused with the reason; a non-4326 CRS is refused with the CRS named.
+      *Done when:* the refusal is a labelled 422 naming the format and the supported alternative, never a generic
+      "unsupported file", and there is a test for each row of `docs/PROJECT_IMPORT.md` §5.
+
+- [ ] **H8 `[P2]` Re-import, supersede, and bulk import.** A second import of the same `projectId` is a new plan,
+      never a mutation of the scored one; supersession is B8. Bulk import of a district's worth of projects is where
+      the per-scene raster set (C3's first half) becomes mandatory rather than tidy.
+      *Done when:* importing the same project twice leaves the first plan byte-identical, and a bulk import refuses
+      cleanly on a scene whose rasters do not cover the footprints.
+
+- [ ] **H9 `[P2]` Carry import provenance onto the ledger and parameter card.** `importId`, `digest`, the importing
+      party and the date, so a reader can tell an imported scheme from a hand-drawn one.
+      *Done when:* the parameter card names the import a run used, and the seam is the one B3 will sign.
+
+### Underside view — requested 26 Nov 2026
+
+The ask: *do not limit the viewport, so users can see the underside of the development.* Checked against the running
+app and the code on 26 Nov, and the honest answer is that the viewport is only one of four locks. Only the first two
+are camera settings; the third is why freeing the camera alone would show a black rectangle.
+
+1. **Pitch is clamped below the horizon.** `cameraRig.ts` sets `MIN_PITCH_DEG = -88`, `MAX_PITCH_DEG = -8`, and
+   `pitchDelta` clamps every tilt into that band. `-8` is the *near-horizon* end, so the tilt control, the tilt
+   buttons and the arrow keys all stop just short of horizontal. The limit is also encoded as a test —
+   `geometry.test.ts` "never allows the camera to swing above the horizon" asserts `MAX_PITCH_DEG < 0` — so it is an
+   invariant, not a slider.
+2. **The camera cannot go under the terrain.** `tuneNavigation` sets `enableCollisionDetection = true`, which is what
+   stops a drag dropping the eye through a 139 m relief surface. Negative-pitch-only plus collision detection means
+   the eye is always above ground and always looking down: there is no pose in the app from which an underside is
+   visible.
+3. **Every surface in the scene is one-sided.** Queried live in the running viewer: both `Cesium3DTileset`s, all
+   three projection `Model`s and `scene.globe` report `backFaceCulling: true`, and nothing in `tilesetLayer.ts` or
+   `modelLayer.ts` changes it. From beneath, the terrain, the textured buildings and the committed GLBs rasterise
+   nothing — you see the page background. The 2.5D massing and the intervention extrusions are the exception, because
+   a Cesium extruded polygon is a closed volume with a bottom cap; they are the only geometry that would draw.
+4. **The globe is clipped to the bbox** (`clipGlobeToBBox`), so the "floor" of the scene is a clipped disc with no
+   underside geometry either.
+
+Convenient detail: `frameExtent` already places the camera *below* its target for a positive pitch
+(`back.z = -range·sin(pitch)`), so a below-view is a parameter, not new framing maths.
+
+- [ ] **H10 `[P0]` Underside view: open the pitch past the horizon and lift collision detection.** Add an explicit
+      `cameraControl.underside()` that frames the scene from below its pivot at a shallow upward pitch (the same
+      `frameExtent` call with a positive `pitchDeg`), and suspend `enableCollisionDetection` only while the eye is
+      below the DEM. Keep the orbit clamp for the normal view: a tilt button that can wander above the horizon is a
+      way to lose the map, so *below ground* is the condition for the wider range, not a global loosening.
+      Restore both on reset, top-down and on leaving the view.
+      *Done when:* the button drops the camera beneath the slab looking up, every axis still moves independently
+      there, and reset returns the clamp. Replace the `MAX_PITCH_DEG < 0` assertion with one that states the real
+      rule — the orbit clamp holds above ground, and the underside view is the only way below it.
+
+- [ ] **H11 `[P0]` Make the masses have an underside.** H10 alone renders an empty frame. Either set
+      `backFaceCulling = false` on the two tilesets and the projection models (cheapest, but the inside-out faces are
+      lit by inverted normals and the city tileset costs roughly double its rasterised triangles — measure against the
+      existing screen-space error of 128 before keeping it), or keep culling and give the import a solid: a base cap
+      polygon at the DEM, plus `Model` bottom caps for the GLBs. The 2.5D massing path needs neither.
+      *Done when:* from below, the study area reads as a slab with buildings standing on it in both 3D modes, the
+      underground tank and flood-storage volumes are visible in section, and the opening frame is unchanged.
+
+- [ ] **H12 `[P1]` Make depth readable once you are under there.** An underside with no scale is a dark shape. Add a
+      horizontal section (a `ClippingPlane` at a chosen elevation over the tilesets, the same plane class
+      `clipGlobeToBBox` already uses) with a depth read-out in metres above the DEM, so a 2.5 m tank and a 14 m
+      reservoir can be told apart. Read-only; nothing here changes a scored cell.
+      *Done when:* a user can cut the development at 0, −5 and −15 m and read the height on screen.
+
+- [ ] **H13 `[P2]` No dead ends from below.** `groundPoint` picks the depth buffer first, then `globe.pick`, then the
+      ellipsoid, and from underneath there is nothing to pick: the depth buffer is background, the globe is a
+      one-sided clipped disc, and `pickEllipsoid` from *inside* the ellipsoid returns a far-side point or nothing. The
+      orbit and zoom anchor therefore lands somewhere unrelated to the view, and a zoom would lurch instead of holding
+      the anchor still. Anchor on the pivot whenever the eye is below the DEM, and refuse to leave the camera
+      underground on any view change.
+      *Done when:* zoom from below moves the eye along the line to the pivot with the anchor fixed on screen, and no
+      interaction can strand the camera below the terrain with the clamp back on.
+
+### Integration readiness — onboarding a project to the whole system — added 26 Nov 2026
+
+The ask: a newly imported project should arrive **integration ready**, not merely written to disk. "Integrated" is a
+claim about every consumer of a project, and nothing in the codebase enumerates those consumers, so a route can pass
+its own tests while the import is absent from the wind field, missing from a drawn corridor, or scored against rasters
+that do not cover it. This subsection is that enumeration plus the adapters that close it.
+
+Readiness is reported per consumer in one of four states. The last one refuses the commit:
+
+- **ready** — the consumer already sees the project.
+- **adapted** — the onboarding step derived or defaulted what the consumer needs, and the value is in `assumptions[]`
+  with `status: DERIVED`, the method and the date.
+- **abstained** — the consumer will not use this project, and the report says so in words. Abstention is allowed;
+  silence is not.
+- **blocked** — the consumer needs a fact the import does not carry and cannot safely default. `REJECTED`; no plan
+  is written (`docs/PROJECT_IMPORT.md` §6.7).
+
+| Consumer | What it needs | How it learns today | Ready today |
+|---|---|---|---|
+| Land-cover ledger | one resolved effect per `INTERVENTION_EFFECTS` kind | `seed_projects.interventions_for` | via H1 |
+| Heat and massing rasters | a `station_massing` feature carrying `heightM` | `run_service._massing_overrides` | only if the import declares massing |
+| Comparison board wind | the same `station_massing` override | `board._scheme_footprints` | only if the import declares massing |
+| Drawn corridor | the scheme's footprint set | `/ventilation/corridors` reads `_require_buildings(scene_id)` — the scene file, **not** scheme interventions | **no** — the drawn line and the board can disagree once a scheme adds massing |
+| OpenFOAM obstacle field | the extruded footprints | `openfoam_channel/run_channel.py::_buildings` reads `buildings_hsk.json` only | **no** — imported massing never enters the solved flow |
+| Raster coverage | footprint inside the loaded grid | `load_grids()` is a fixed-name `lru_cache` singleton that never compares its bounds to the scene bbox | **no** — an out-of-window import is silently scored |
+| Project catalog | a plan with `params.projectId` | `ProjectCatalog.tsx` reads plans, not a constant | via H1 |
+| 3D model and label | `model`, `origin`, `scale` and `footprint` on disk | `scene_service.project_models` | T1 (no GLB) is listed as *unavailable*, so it has no label or marker |
+| Intervention drawing | a DEM base height | `interventionLayer.applyStyle` | **no** — H3 |
+| Consent and caps | declaration status and active plans | `services/consent.py` | via H1 |
+| Provenance | `importId` and digest | parameter card and ledger | H9 |
+
+- [ ] **H14 `[P0]` Make the readiness contract code, not prose.** One `PROJECT_CONSUMERS` registry: each entry names a
+      consumer, the artifact it reads, and a predicate `(project, scene) -> ready | adapted | abstained | blocked` with
+      a one-line reason. `POST /imports` (H1) returns the results as `readiness[]`; `dryRun` returns the same list
+      without writing.
+      *Done when:* every row of the table above is a registry entry, **and a test fails when a project consumer in the
+      code has no entry.** The second half is the point — it is what makes the *next* consumer (a new axis, a new
+      export, a re-solve) fail loudly instead of quietly ignoring imports.
+      *Why a registry:* four different mechanisms already carry project information (scene file, plan, massing
+      override, raster set). Three separate "add import support" tickets will drift.
+
+- [ ] **H15 `[P0]` Onboarding adapters: derive what can be derived, and label it.** For a T1/T2 import: derive the
+      footprint from the GLB when only a model is supplied (H5), derive a massing height when the model has one (else
+      abstain for massing), default land class and curve number with the source named, and set the DEM base. Each
+      derived value enters `assumptions[]` as `status: DERIVED` with its method. A field that cannot be derived becomes
+      `furtherInformation`, never a silent zero.
+      *Done when:* an import carrying only a footprint, a GLB and a storage depth becomes ready with every derived
+      value named — and removing one derivation turns it into an abstention rather than a default.
+
+- [ ] **H16 `[P0]` One corridor per scheme, drawn and compared.** Let `/ventilation/corridors` apply the scheme's
+      `station_massing` overrides — the same `_scheme_footprints` rule the board already uses — so the line the map
+      draws and the line the comparison scores come from one footprint set.
+      *Done when:* an imported massing moves the drawn corridor and the board's corridor by the same amount, and a test
+      asserts the two agree for the fixture in H20. Without this the picture and the number disagree exactly where the
+      product says they must not.
+
+- [ ] **H17 `[P1]` Say when the wind field is not the scheme's.** The solved channel is the base city only
+      (STATUS.md edge 4). An import must report `wind: abstained — the solve predates this project; the drawing is the
+      base massing`, and the compass must not imply otherwise.
+      *Done when:* the import report and the wind panel print the same abstention, so nobody reads the threads as the
+      imported scheme's flow.
+      *Follow-on, separate:* re-solving per scheme is a batch job with a per-scheme obstacle set and its own sidecar,
+      not a request-path feature — and not this item.
+
+- [ ] **H18 `[P1]` Refuse an import the rasters do not cover.** Compare the footprint bbox to the loaded `Grids` bounds
+      before rasterising: `REJECTED` outside, flagged when only partly inside the clip fraction. This is H1 step 2; the
+      per-scene raster set is C3's first half, so until C3 a second district is refused rather than mis-scored.
+      *Done when:* a footprint 2 km outside the study window is refused with both bboxes named and no plan written.
+
+- [ ] **H19 `[P1]` A T1 project still has a place on the map.** `project_models()` requires a model **and** a
+      footprint, so an effect-only import is listed as unavailable and gets no label or marker. Give it a footprint
+      outline and a label without a GLB, styled as distinct from a modelled project.
+      *Done when:* a T1 import is visible with its name and outline, and its catalog row says "effect-only".
+
+- [ ] **H20 `[P1]` One onboarding fixture, end to end.** A committed fixture — a footprint, two effects, a small
+      decimated GLB — that the suite drives from file to ready, then through a run and an A/B compare. This is the
+      regression that stops the onboarding path rotting quietly after the demo.
+      *Done when:* the fixture passes with no repository edit beyond the fixture itself, and the test asserts the same
+      readiness list the panel shows.
+
+- [ ] **H21 `[P2]` The same checklist for a new *format*.** When the offline converter (I2) lands it produces the same
+      import body and goes through H14's registry, so a new format cannot bypass readiness. The converter stays off the
+      API, per `docs/PROJECT_IMPORT.md` §5.
+
+- [ ] **H22 `[P1]` One onboarding pipeline, two entry points.** A single `onboard_project(body, scene)` that runs the
+      order — validate, clip, rasterise, overlap, caps, resolve effects, adapt (H15), readiness (H14) — and is called by
+      both `POST /imports` and `scripts/seed_projects.py`. The seeder is today's only working route, so if the two paths
+      adapt differently then a committed project and an imported one are not the same kind of object, and every demo
+      that mixes them is scored on a different shape of data.
+      *Done when:* the same project body through either entry point produces the same plan, the same interventions and
+      the same readiness list, and a test fails on any difference. This is what "import onboarding" means as code rather
+      than as a checklist a person follows.
+
+### Sequencing
+
+H3 before H1's demo (a scored-but-invisible import is a broken demo). H1 before H2. H1 gates A1. H8's bulk-import
+half is the same blocker as a second study area, and should be scoped after C3's playbook rather than inside the
+urgent work. Nothing here depends on attribution (A2b), so import does not wait on it.
+
+H10 and H11 are one demo and must land together: freeing the camera with nothing two-sided behind it shows a black
+frame, which is worse than the limit it replaced. Neither depends on H1, so they can run in parallel with H3 — but
+H11's culling decision should be measured on the same opening frame that H6's model budget is judged against.
+
+Readiness runs through the same order: H14 before H2 (the panel's accept step is the readiness list), H15 beside H1
+(an adapter that is not in the route is a manual step again), and H16 before any demo that turns the wind on with an
+imported massing, because that is the first frame where the drawing and the board can part company. H22 should land with
+H1 rather than after it — a second pipeline bolted on later is exactly how the seeder and the route drift apart. H18 can
+land with H1's refusal path; H17 is a sentence, not a solve. None of H14–H22 changes a scored number, so none of them
+can quietly move a previously published figure.
+
+---
+
 ## The one-line version
 
 One real declaration (A1), attribution defined (A2), a company (A5) and a Code of Practice (A4) — by mid-December.
 Everything else is downstream of those four.
 
-**Competition overlay (18 Nov):** a 4-person entry team, the CCMF milestone budget, honest attribution claims, and a
-fresh suite run — before 1 Dec. See §F.
+**Competition overlay (18 Nov, updated 26 Nov):** a 4-person entry team, the CCMF milestone budget, honest attribution
+claims, and a fresh suite run — before 1 Dec. DeepTech100+ (29 Nov) is now a separate gate in §F: its 15-slide deck
+exists, but the form, the HKU affiliation proof and the PIC choice are human actions. See §F10.
 
 **Government-criteria overlay (24 Nov):** G1–G3 and G5–G6 are met. The Criteria fit panel sits with the comparison,
 above the storm. Its closed state is four rows (air ventilation, sustainable building design, drainage, EIA). Cap. 499
@@ -325,4 +623,19 @@ is a broad-brush fit read, not a statutory determination. It does not report an 
 Impact Assessment, or a cumulative-impact finding. The comparison also names the projects held at data collection and
 compares the wind channel under the study-window inflow. SVR and LVR stay empty. G4 (no map layer), G7, G8 and G9 are
 still open. G8 still comes before any site-specific HSK–HT claim. See §G.
+
+**Project-import overlay (26 Nov):** H0 is met — `docs/PROJECT_IMPORT.md` is the contract, and nothing in it is built.
+H1 (the route and its report) and H3 (the DEM base on extrusions) are the two that have to land before a third party
+can put a scheme in front of a run and see it. H1 is a precondition of A1, not a competitor. Import is a staged
+scheme, not a declaration: no hash, no signature, no "as at". See §H.
+
+**Integration-readiness overlay (26 Nov):** writing the plan is half the job. H14's consumer registry, H15's adapters
+and H22's one pipeline (shared with the seeder) are what make an import part of the whole system rather than a catalog
+row: today the drawn corridor reads only the scene file (H16), the OpenFOAM field is the base city only (H17), and an
+out-of-window footprint is scored without a bounds check (H18). Readiness is reported per consumer as ready / adapted /
+abstained / blocked, and an abstention must be said in words. Nothing in H14–H22 changes a scored number. See §H.
+
+**Underside overlay (26 Nov):** the request to look under the development is four locks, not one — a −8° pitch clamp,
+collision detection, single-sided tilesets/GLBs/globe, and a clipped globe floor. H10 makes the pose possible; H11 is
+the one that makes it visible, and it is the only item here that spends render budget. See §H.
 

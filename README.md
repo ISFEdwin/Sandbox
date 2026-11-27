@@ -8,6 +8,9 @@ The Northern Metropolis is being built piece by piece, by developers who are com
 
 This is the ground truth for the product. Feature status lives in [STATUS.md](STATUS.md). The same statement is in [AGENTS.md](AGENTS.md).
 
+Work in flight is on the team board: <https://trello.com/b/Bz0W639T/sandbox>. It mirrors [TODO.md](TODO.md) — Done, Pending,
+Blocked and To Do — and the files in this repository stay canonical; the board is a view of them.
+
 ## Keywords
 
 - Broad-brush
@@ -291,6 +294,12 @@ CI runs the same checks (`.github/workflows/ci.yml`) on Node.js 24 actions. The 
 - Some land-cover and soil inputs are estimated rather than surveyed; the parameter card says which.
 - Single-tenant file store. It will not survive a second concurrent customer.
 - Planned projects can be toggled, but construction phasing and overlapping timelines are not yet modelled.
+- A third party cannot yet import a project into a running scene. A project is data (`backend/data/projects/<id>.json`)
+  and needs a repository edit plus `scripts/seed_projects.py`; the contract for an import route is specified in
+  [docs/PROJECT_IMPORT.md](docs/PROJECT_IMPORT.md) and not built.
+- You can orbit the development but not look up at its underside. The camera is clamped above the horizon and above
+  the ground, and the terrain, buildings and project models are all single-sided, so a view from below shows nothing.
+  Only the 2.5D massing and the interventions (closed extrusions) have a bottom face. Tracked as TODO H10–H11.
 - Criteria fit uses the facts you type and the thresholds in `backend/data/reference/hk_screening_thresholds.json`. It does not decide a permit or a planning permission. Hung Shui Kiu–Ha Tsuen is named as plan S/HSK/4 only; the zone notes and any Deep Bay overlap were not read.
 - The panel does not store a declaration. A dated declaration record is still unbuilt.
 - The live instance runs one worker against a file store, with no authentication and no tenancy boundary. It is a demo, not a deployment: anything a visitor generates is written to the same store a visitor reads from.
