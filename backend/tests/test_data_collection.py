@@ -178,7 +178,13 @@ def test_wind_channel_compares_options_and_does_not_invent_a_velocity_ratio() ->
     assert [cell["gridCellId"] for cell in east["cells"]] == ["3462", "3463", "3559", "3560"]
     assert east["centroid"]["gridCellId"] == "3463"
     assert east["centroid"]["inletSpeedMps"] == 2.3009
-    assert east["solvedStreamlineCount"] == 41
+    # The count is the sidecar's, not a fixed number: the channel is re-solved
+    # at a different mesh from time to time, and the contract is that the API
+    # reports what was actually solved.
+    sidecar = json.loads(
+        (BACKEND_DIR / "data" / "openfoam" / "channel_sidecar.json").read_text(encoding="utf-8")
+    )
+    assert east["solvedStreamlineCount"] == sidecar["directions"]["E"]
     assert east["solvedOnRequestPath"] is False
     assert east["scheme"]["a"]["firstObstructionMeanM"] == east["scheme"]["b"]["firstObstructionMeanM"]
     assert east["scheme"]["b"]["pathLengthM"] is not None

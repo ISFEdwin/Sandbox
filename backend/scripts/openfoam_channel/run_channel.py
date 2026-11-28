@@ -54,8 +54,13 @@ SEASONS = ("annual", "summer", "winter")
 HEIGHTS = ("500", "300", "200")
 
 IMAGE = "opencfd/openfoam-run:2512"
-DX_TARGET = 20.0
-DY_TARGET = 20.0
+# 8 m, not 20 m. At 20 m a cell covered a whole terrace and the solver saw
+# blocks: neighbouring buildings merged, corners vanished, and an alley narrower
+# than 20 m closed completely. The study window is ~740 x 590 m, so 8 m gives
+# ~93 x 74 columns -- enough to keep each of the 396 footprints distinct while
+# the solve stays a coarse channel rather than a CFD study.
+DX_TARGET = 8.0
+DY_TARGET = 8.0
 DZ = 8.0
 Z_MAX = 120.0
 M_PER_DEG_LAT = 110_540.0
@@ -234,9 +239,17 @@ def _buildings(west: float, south: float, m_lon: float) -> list[tuple[list[tuple
 
 
 def _occupancy(buildings, nx: int, ny: int, nz: int, dx: float, dy: float) -> np.ndarray:
-    """True where a 2.5D extrusion occupies the cell. The top layer stays open."""
+    """True where a 2.5D extrusion occupies the cell. The top layer stays open.
+
+    Five probes with a majority, not "any probe". The old any-hit rule grew
+    every footprint by up to one cell on each side, which at 20 m turned a row of
+    buildings into one block; at 8 m the same rule would still round off corners
+    and close alleys. A majority keeps the plan the ring actually draws, and
+    drops only features thinner than a cell -- which the mesh cannot resolve
+    anyway.
+    """
     solid = np.zeros((nx, ny, nz), dtype=bool)
-    probes = ((0.5, 0.5), (0.25, 0.25), (0.75, 0.25), (0.25, 0.75), (0.75, 0.75))
+    probes = ((0.5, 0.5), (0.28, 0.28), (0.72, 0.28), (0.28, 0.72), (0.72, 0.72))
     for ring, height in buildings:
         xs = [p[0] for p in ring]
         ys = [p[1] for p in ring]
@@ -249,12 +262,11 @@ def _occupancy(buildings, nx: int, ny: int, nz: int, dx: float, dy: float) -> np
             k_top = 1
         for i in range(i0, i1):
             for j in range(j0, j1):
-                hit = False
+                inside = 0
                 for fx, fy in probes:
                     if _point_in_ring((i + fx) * dx, (j + fy) * dy, ring):
-                        hit = True
-                        break
-                if hit:
+                        inside += 1
+                if inside >= 3:
                     solid[i, j, :k_top] = True
     return solid
 
@@ -597,26 +609,35 @@ def trace(grid: dict, time_dir: Path, roles: dict[str, str]) -> dict:
     west, south = grid["west"], grid["south"]
     m_lon = grid["mPerDegLon"]
     seeds = []
-    heights = (1, 2, 4)
+    # Five heights: 4, 12, 20, 36 and 52 m. The 4 m layer matters most -- it is
+    # the one that weaves between blocks, sits in their wakes and is slow enough
+    # to read as blue. Without it every thread hugged the 20-40 m band above the
+    # podiums and the colour ramp never left orange.
+    heights = (0, 1, 2, 4, 6)
+    # A cardinal bearing has one inlet face and a diagonal has two, so the
+    # across-flow step is halved for the cardinals to keep all sixteen bearings
+    # at roughly the same number of threads.
+    inlets = sum(1 for role in roles.values() if role == "inlet")
+    step = 1 if inlets <= 1 else 2
 
     def plant(i: int, j: int, k: int, x: float, y: float) -> None:
         if 0 <= k < nz and occupied[i, j, k]:
             seeds.append((x, y, (k + 0.5) * dz))
 
     if roles.get("north") == "inlet":
-        for i in range(0, nx, 2):
+        for i in range(0, nx, step):
             for k in heights:
                 plant(i, ny - 1, k, (i + 0.5) * dx, (ny - 0.5) * dy)
     if roles.get("south") == "inlet":
-        for i in range(0, nx, 2):
+        for i in range(0, nx, step):
             for k in heights:
                 plant(i, 0, k, (i + 0.5) * dx, 0.5 * dy)
     if roles.get("east") == "inlet":
-        for j in range(0, ny, 2):
+        for j in range(0, ny, step):
             for k in heights:
                 plant(nx - 1, j, k, (nx - 0.5) * dx, (j + 0.5) * dy)
     if roles.get("west") == "inlet":
-        for j in range(0, ny, 2):
+        for j in range(0, ny, step):
             for k in heights:
                 plant(0, j, k, 0.5 * dx, (j + 0.5) * dy)
 
@@ -625,7 +646,7 @@ def trace(grid: dict, time_dir: Path, roles: dict[str, str]) -> dict:
         pos = np.array(seed, dtype=np.float64)
         line = []
         speeds = []
-        for _ in range(180):
+        for _ in range(220):
             i = int(pos[0] / dx)
             j = int(pos[1] / dy)
             k = int(pos[2] / dz)
@@ -633,7 +654,7 @@ def trace(grid: dict, time_dir: Path, roles: dict[str, str]) -> dict:
                 break
             vel = ugrid[i, j, k]
             speed = float(np.linalg.norm(vel))
-            if speed < 0.2:
+            if speed < 0.15:
                 break
             line.append((
                 west + pos[0] / m_lon,
@@ -641,9 +662,16 @@ def trace(grid: dict, time_dir: Path, roles: dict[str, str]) -> dict:
                 float(pos[2]),
             ))
             speeds.append(speed)
-            pos = pos + vel / speed * 10.0
+            pos = pos + vel / speed * 8.0
         if len(line) < 4:
             continue
+        # Every other point (16 m) is enough for a 1.6 px thread and halves the
+        # file: the whole set is served as static GeoJSON, so the coordinate
+        # count is payload, not detail. The last point is kept so the line ends
+        # where the walk ended rather than one step short.
+        kept = line[::2]
+        if kept[-1] != line[-1]:
+            kept.append(line[-1])
         features.append({
             "type": "Feature",
             "properties": {
@@ -651,7 +679,10 @@ def trace(grid: dict, time_dir: Path, roles: dict[str, str]) -> dict:
                 "speedMinMps": round(float(min(speeds)), 3),
                 "speedMaxMps": round(float(max(speeds)), 3),
             },
-            "geometry": {"type": "LineString", "coordinates": [[x, y, z] for x, y, z in line]},
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [[round(x, 6), round(y, 6), round(z, 1)] for x, y, z in kept],
+            },
         })
     return {
         "type": "FeatureCollection",
