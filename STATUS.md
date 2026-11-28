@@ -93,10 +93,11 @@ Two things made a developer's result differ from CI's, both now fixed:
   inherited too: the `Settings` singleton is built at import time, before the redirect, so the suites ran against a
   real model while CI runs the heuristic. The model settings are reset to the `.env` baseline.
 
-**The `.venv` trap.** `backend/.venv` is Python 3.10.9 with pydantic 2.9.2 and no pytest — off-pin, and the
-environment the committed `contracts/openapi.json` was once rendered under. `backend/conftest.py` now refuses to run
-the suite on an environment that does not match `requirements.txt`, and `app/export_openapi.py` refuses to render the
-contract off-pin, with the message naming the fix.
+**The `.venv` trap.** `backend/.venv` was Python 3.10.9 with pydantic 2.9.2 and no pytest — off-pin, and the
+environment the committed `contracts/openapi.json` was once rendered under. It was **deleted on 28 Nov 2026**. The
+guards stay: `backend/conftest.py` refuses to run the suite on an environment that does not match `requirements.txt`,
+and `app/export_openapi.py` refuses to render the contract off-pin, with the message naming the fix. So a stale venv
+recreated at that path fails loudly instead of quietly producing a second contract.
 
 ---
 

@@ -20,7 +20,9 @@ uvicorn[standard]==0.30.6
 #
 # Two lessons, both still true:
 #   1. Generate the contract with THIS file's versions, never with whatever the
-#      local interpreter happens to carry. `backend/.venv` is stale at 2.9.2.
+#      local interpreter happens to carry. `backend/.venv` used to be the
+#      counter-example (3.10, pydantic 2.9.2, an older contract); it was deleted
+#      on 28 Nov 2026 so it cannot be picked up by accident again.
 #   2. A green local suite proves nothing about the contract job when the local
 #      venv is off-pin. Check `pip show pydantic` before trusting it.
 pydantic==2.13.5

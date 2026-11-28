@@ -25,7 +25,7 @@ An integration test drives the *actual* run composition
 whole pipeline honours unpin. It is separated because it currently surfaces a
 gap in the composition layer, not in `pins`.
 
-Run:  ./backend/.venv/bin/python tests/test_pins.py
+Run:  ./backend/.venv313/bin/python backend/tests/test_pins.py
 """
 
 from __future__ import annotations

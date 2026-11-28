@@ -137,14 +137,17 @@ Data and models are committed, so a clone runs without fetching external assets.
 Target Python is **3.14** (what CI and Azure use). **3.13 is the known-good local interpreter** — the recorded 256-check
 run was on `backend/.venv313`, Python 3.13.12. `scripts/preflight.py` enforces ≥3.10 and recommends 3.13.
 
-> **`backend/.venv` is stale at pydantic 2.9.2.** Do not use it. Use `.venv313`, or make a fresh one. A green local suite
-> proves nothing about the contract job when the local venv is off-pin — check `pip show pydantic` before trusting it.
+> **`backend/.venv` was removed on 28 Nov 2026.** It was Python 3.10.9 at pydantic 2.9.2, kept an old contract render,
+> and every raster script that used it failed at import. A local venv at that path is untrustworthy by definition, so
+> `scripts/preflight.py` still probes for one and says so if it reappears. Use `.venv313`, or make a fresh 3.13 venv. A
+> green local suite proves nothing about the contract job when the local venv is off-pin — check `pip show pydantic`
+> before trusting it.
 
 ### Backend (port 8000)
 
 ```bash
 cd backend
-python3.13 -m venv .venv313          # or your own; do not reuse the stale .venv
+python3.13 -m venv .venv313          # or your own; check preflight before trusting it
 source .venv313/bin/activate
 pip install -r requirements.txt pytest   # pytest is deliberately not in requirements.txt
 cp .env.example .env
@@ -266,7 +269,7 @@ Two limits to know before trusting the pipeline:
 
 | Symptom | Cause |
 |---|---|
-| `ModuleNotFoundError: numpy` from a raster script | Wrong interpreter — you are on the stale `.venv` (3.10). `python scripts/preflight.py` says so in one line |
+| `ModuleNotFoundError: numpy` from a raster script | Wrong interpreter — not the venv the deps were installed into. `python scripts/preflight.py` says so in one line |
 | Every request 404s in production, "Could not load the scene" | `VITE_API_BASE_URL` without the `/api` suffix |
 | A toggle does nothing; rasters 404 | `STATIC_BASE_URL` empty |
 | Contract job red, local suite green | Local venv off-pin. Regenerate with the pinned pydantic |
