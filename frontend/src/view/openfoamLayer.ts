@@ -78,18 +78,23 @@ export function addOpenfoamStreamlines(
       const end = Math.min(positions.length, (part + 1) * chunk * 3 + 3)
       if (end - start < 6) continue
       const display = feature.properties?.displayTrace === true
-      const alpha = display ? 0.78 : 0.95
+      // Thinner and a little softer than before: the field is now four times
+      // denser, so the weight per thread has to come down or the channel reads
+      // as a solid ribbon. Display traces sit below the solved lines so the
+      // solved paths stay legible underneath.
+      const alpha = display ? 0.55 : 0.9
       const entity = viewer.entities.add({
         name: display ? 'Wind display trace' : 'OpenFOAM streamline',
         polyline: {
           positions: Cartesian3.fromDegreesArrayHeights(positions.slice(start, end)),
-          width: display ? 1.8 : 2.6,
+          width: display ? 1.1 : 1.5,
           clampToGround: false,
           arcType: ArcType.NONE,
           material: Color.fromCssColorString(speedColour(along[part], speedScale)).withAlpha(alpha),
-          // The massing is solid. The same colour when the depth test fails
-          // keeps the thread visible where it passes a tower.
-          depthFailMaterial: Color.fromCssColorString(speedColour(along[part], speedScale)).withAlpha(alpha),
+          // No depthFailMaterial. The massing is opaque, so a thread that runs
+          // behind a tower now disappears there and reappears downwind. The
+          // old fail material painted it through the building, which made the
+          // channel read as if it ignored the massing entirely.
         },
       })
       entities.push(entity)
@@ -108,7 +113,6 @@ export function addOpenfoamStreamlines(
       if (!graphic) continue
       const colour = Color.fromCssColorString(speedColour(item.speed, scale)).withAlpha(item.alpha)
       graphic.material = new ColorMaterialProperty(colour)
-      graphic.depthFailMaterial = new ColorMaterialProperty(colour)
     }
     repaint()
   }

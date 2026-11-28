@@ -1,12 +1,12 @@
 /**
  * Display traces between solved OpenFOAM streamlines.
  *
- * The coarse channel plants a seed every other cell, so the drawn field is
- * sparse next to a wind-tunnel picture. Filling the gap between two solved
- * paths that stay close produces more threads in the channel and leaves a
- * gap where the paths split around a building. An inserted thread is a
- * display trace: its speed is the blend of the two solved speeds. It is not
- * an additional solve.
+ * The channel plants seeds across the inlet at five heights, every other cell
+ * on a diagonal and every cell on a cardinal, so the drawn field is still
+ * sparser than a wind-tunnel picture. Filling the gap between two solved paths
+ * that stay close produces more threads in the channel and leaves a gap where
+ * the paths split around a building. An inserted thread is a display trace: its
+ * speed is the blend of the two solved speeds. It is not an additional solve.
  */
 
 export interface TraceFeature {
@@ -69,7 +69,7 @@ function blend(left: TraceFeature, right: TraceFeature, t: number): TraceFeature
   }
 }
 
-/** Solved lines plus two traces between neighbours that stay 8–48 m apart. */
+/** Solved lines plus one or two traces between neighbours that stay 8–48 m apart. */
 export function densifyTraces(features: TraceFeature[], bearingDeg: number): TraceFeature[] {
   const groups = new Map<number, TraceFeature[]>()
   for (const feature of features) {
@@ -97,8 +97,17 @@ export function densifyTraces(features: TraceFeature[], bearingDeg: number): Tra
         sum += metres(sample(left, k, count), sample(right, k, count))
       }
       const gap = sum / count
-      if (gap < 8 || gap > 48) continue
-      out.push(blend(list[i], list[i + 1], 0.33), blend(list[i], list[i + 1], 0.66))
+      // Below 12 m the solved neighbours already read as a continuous band, so
+      // a filler would only add entities. This keeps cardinals (seeded every
+      // cell) at about the same drawn spacing as diagonals (seeded every other
+      // cell), which is what the old fixed two-fillers rule broke.
+      if (gap < 12 || gap > 48) continue
+      // The solved field is already close together, so a wide gap takes two
+      // fillers and a narrow one takes a single midpoint. Keeping the count
+      // tied to the gap holds the drawn spacing near 5 m without tripling the
+      // entity count on the densest bearings.
+      const fillers = gap <= 20 ? [0.5] : [0.33, 0.66]
+      for (const t of fillers) out.push(blend(list[i], list[i + 1], t))
     }
   }
   return out
@@ -108,14 +117,17 @@ export function densifyTraces(features: TraceFeature[], bearingDeg: number): Tra
  * Blue in a slow part of the solved field, red in a fast part.
  *
  * `scale` is the selected 10 m wind divided by the solved inlet. The solved
- * speeds only span about 2–4 m/s, so multiplying them straight into a ramp
- * that tops out near a typhoon paints every thread the same orange. A mild
- * power keeps a Signal preset hotter and leaves the fast and slow threads apart.
+ * speeds only span about 0.2–5.5 m/s, so multiplying them straight into a ramp
+ * that tops out near a typhoon painted every thread the same orange and threw
+ * away the wakes. The ramp is therefore anchored to that solved range with a
+ * little headroom (0.5 m/s to 6.5 m/s), which leaves a NE channel amber-to-red
+ * and a 1.2 m/s west channel gold-to-blue. A mild power keeps a Signal preset
+ * hotter while leaving the fast and slow threads apart.
  */
 export function speedColour(solvedSpeed: number, scale = 1): string {
   const bias = Math.pow(Math.max(scale, 0.25), 0.35)
   const stretched = Math.max(solvedSpeed, 0.2) * bias
-  const t = Math.max(0, Math.min(1, Math.log(stretched / 0.8) / Math.log(8 / 0.8)))
+  const t = Math.max(0, Math.min(1, Math.log(stretched / 0.5) / Math.log(6.5 / 0.5)))
   const stops = [
     [126, 200, 255],
     [255, 231, 168],
