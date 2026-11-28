@@ -36,10 +36,25 @@ Thumbs.db
 # Word temp files
 ~$*
 
-# Submission decks. They carry the fee schedule, competitor prices and partner
-# targets, and this repository is public (TODO E3). Keep the .pptx local; the
-# reproducible cut lives in scripts/build_deeptech_deck.py, which carries no fees.
-deliverables/*.pptx
+# Submission decks and the review of them. TRACKED BY DECISION — this block is a
+# record, not an exclusion.
+#
+# Until 27 Nov 2026 `deliverables/*.pptx` was ignored because a deck carries the
+# fee schedule, competitor prices and partner targets, and TODO E3 says this
+# repository is public. Edwin reversed that on 27 Nov: the decks are kept as
+# context for whoever works on the next submission, so all of `deliverables/` is
+# in the tree.
+#
+# What is now published, deliberately, and must stay published for the history to
+# mean anything: HK$30k / HK$80-150k / HK$500k / HK$1.29M, the 10k/45k/45k CCMF
+# disbursement, competitor prices (HK$3.8-20M per study, US$185 a month,
+# HK$3,920-94,000), and one named firm used as a market example (Arup, footnoted
+# as "not a customer or partner").
+#
+# Consequence to keep in mind: `git rm --cached deliverables/` does not unpublish
+# anything already pushed. AGENTS.md §3 rule 4 and TODO E3 were rewritten in the
+# same pass to match; if either ever says "no fee figures in this repository"
+# again, one of the two is wrong.
 
 # Transient HTTP cache for scripts/fetch_dem.py.
 # Every batch of the elevation grid is cached so an interrupted run resumes for
